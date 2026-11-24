@@ -1,0 +1,9 @@
+.DS_Store
+*.swp
+.vscode/
+.idea/
+
+# Données du plugin (fichiers JSON créés sur la box)
+data/*.json
+data/*.json.*
+data/.*.lock
