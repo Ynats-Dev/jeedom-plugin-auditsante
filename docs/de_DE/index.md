@@ -114,7 +114,7 @@ Das Plugin liest die gesamte Installation einmal (Objekte, Geräte, Befehle, Sze
 
 | Prüfung | Bedeutung | Was gesucht wird | Automatische Korrektur |
 |---|---|---|---|
-| Unbenutzte Variablen | Niedrig | Szenariovariablen, die kein Szenario, Gerät und keine Interaktion liest oder schreibt. Oft sind es Reste gelöschter Szenarien. Variablen, die nur in einem Code-Block oder von einem externen Programm verwendet werden, erscheinen ebenfalls. |  |
+| Unbenutzte Variablen | Niedrig | Szenariovariablen, die kein Szenario (einschließlich Codeblöcken), Gerät, keine Interaktion, Ansicht oder kein Design liest oder schreibt. Oft sind es Überbleibsel gelöschter Szenarien. Variablen, die nur von einem externen Programm (API) oder einem Plugin mit eigener Konfiguration verwendet werden, erscheinen ebenfalls. |  |
 | Variablen gelöschter Elemente | Niedrig | Variablen, die an ein nicht mehr existierendes Szenario oder Gerät gebunden sind. | Ja |
 | Verwaiste Szenarioblöcke | Niedrig | Blöcke, Unterblöcke und Ausdrücke von Szenarien, die keinem Szenario mehr zugeordnet sind (Reste abgebrochener Löschungen oder Kopien). Sie belegen die Datenbank ohne Nutzen. |  |
 | Größe der Datenbank | Info | Die größten Tabellen der Jeedom-Datenbank. Der Verlauf macht fast immer den Großteil aus. |  |

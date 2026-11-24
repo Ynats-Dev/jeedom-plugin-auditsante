@@ -114,7 +114,7 @@ The plugin reads the whole installation once (objects, devices, commands, scenar
 
 | Check | Importance | What is looked for | Auto fix |
 |---|---|---|---|
-| Unused variables | Low | Scenario variables that no scenario, device or interaction reads or writes. They are often leftovers of deleted scenarios. Those used only in a code block or by an external program also appear. |  |
+| Unused variables | Low | Scenario variables that no scenario (code blocks included), device, interaction, view or design reads or writes. They are often leftovers from deleted scenarios. Those used only by an external program (API) or by a plugin that keeps its own configuration also appear. |  |
 | Variables of deleted items | Low | Variables attached to a scenario or device that no longer exists. | Yes |
 | Orphan scenario blocks | Low | Scenario blocks, sub-blocks and expressions that are no longer attached to any scenario (leftovers of interrupted deletions or copies). They take up database space for nothing. |  |
 | Database size | Info | The largest tables of the Jeedom database. History almost always accounts for most of it. |  |

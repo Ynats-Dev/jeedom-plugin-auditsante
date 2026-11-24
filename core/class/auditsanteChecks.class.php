@@ -375,7 +375,7 @@ class auditsanteChecks {
         'category' => 'data',
         'severity' => 'low',
         'title' => __('Variables inutilisées', __FILE__),
-        'description' => __('Variables de scénario qu\'aucun scénario, équipement ou interaction ne lit ni n\'écrit. Ce sont souvent des restes de scénarios supprimés. Celles utilisées seulement dans un bloc code ou par un programme externe apparaissent aussi.', __FILE__),
+        'description' => __('Variables de scénario qu\'aucun scénario (y compris les blocs code), équipement, interaction, vue ou design ne lit ni n\'écrit. Ce sont souvent des restes de scénarios supprimés. Celles utilisées seulement par un programme externe (API) ou un plugin qui garde sa propre configuration apparaissent aussi.', __FILE__),
         'recommendation' => __('Supprimez-les depuis Outils > Variables (bouton « Supprimer » ou action remove_variable).', __FILE__),
         'fix' => array('type' => 'link', 'label' => __('Variables', __FILE__), 'url' => 'index.php?v=d&modal=dataStore.management&type=scenario'),
       ),
@@ -1561,7 +1561,8 @@ class auditsanteChecks {
 
   /**
    * Une variable est utilisée si un élément la lit ou l'écrit : variable(nom) ou variable("nom", ...), champ
-   * « name » ou « variable » d'une action (JSON), ou son nom entre guillemets dans le code d'un design ou d'une vue.
+   * « name » ou « variable » d'une action (JSON), setData/getData/removeData dans un bloc code, ou son nom entre
+   * guillemets dans le code d'un design ou d'une vue.
    */
   private static function variableUsed($_name, $_corpus, $_displays, $_quote) {
     if (stripos($_corpus, $_name) === false) {
@@ -1572,6 +1573,10 @@ class auditsanteChecks {
       return true;
     }
     if (preg_match('/' . $_quote . '(?:name|variable)' . $_quote . '\s*:\s*' . $_quote . $name . $_quote . '/i', $_corpus)) {
+      return true;
+    }
+    // Bloc code d'un scénario : $scenario->setData('nom', ...), getData, removeData, scenario::setData, dataStore::byTypeLinkIdKey('scenario', -1, 'nom')
+    if (preg_match('/(?:(?:set|get|remove)Data|byTypeLinkIdKey\s*\([^)]*?,)\s*\(?\s*' . $_quote . $name . $_quote . '/i', $_corpus)) {
       return true;
     }
     return $_displays !== '' && stripos($_displays, $_name) !== false && preg_match('/' . $_quote . $name . $_quote . '/i', $_displays) === 1;

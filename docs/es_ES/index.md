@@ -114,7 +114,7 @@ El plugin lee una sola vez toda la instalación (objetos, equipos, comandos, esc
 
 | Comprobación | Importancia | Qué se busca | Corrección automática |
 |---|---|---|---|
-| Variables sin usar | Baja | Variables de escenario que ningún escenario, equipo o interacción lee ni escribe. A menudo son restos de escenarios eliminados. Las usadas solo en un bloque código o por un programa externo también aparecen. |  |
+| Variables sin usar | Baja | Variables de escenario que ningún escenario (incluidos los bloques de código), equipo, interacción, vista o diseño lee ni escribe. Suelen ser restos de escenarios eliminados. Las usadas solo por un programa externo (API) o por un plugin que guarda su propia configuración también aparecen. |  |
 | Variables de elementos eliminados | Baja | Variables vinculadas a un escenario o un equipo que ya no existe. | Sí |
 | Bloques de escenarios huérfanos | Baja | Bloques, subbloques y expresiones de escenarios que ya no están vinculados a ningún escenario (restos de eliminaciones o copias interrumpidas). Ocupan la base sin servir. |  |
 | Tamaño de la base de datos | Info | Las tablas más voluminosas de la base de Jeedom. El historial casi siempre representa la mayor parte. |  |

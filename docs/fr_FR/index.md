@@ -114,7 +114,7 @@ Le plugin lit une seule fois l'ensemble de l'installation (objets, équipements,
 
 | Contrôle | Importance | Ce qui est recherché | Correction auto |
 |---|---|---|---|
-| Variables inutilisées | Faible | Variables de scénario qu'aucun scénario, équipement ou interaction ne lit ni n'écrit. Ce sont souvent des restes de scénarios supprimés. Celles utilisées seulement dans un bloc code ou par un programme externe apparaissent aussi. |  |
+| Variables inutilisées | Faible | Variables de scénario qu'aucun scénario (y compris les blocs code), équipement, interaction, vue ou design ne lit ni n'écrit. Ce sont souvent des restes de scénarios supprimés. Celles utilisées seulement par un programme externe (API) ou un plugin qui garde sa propre configuration apparaissent aussi. |  |
 | Variables d'éléments supprimés | Faible | Variables rattachées à un scénario ou un équipement qui n'existe plus. | Oui |
 | Blocs de scénarios orphelins | Faible | Blocs, sous-blocs et expressions de scénarios qui ne sont plus rattachés à aucun scénario (restes de suppressions ou de copies interrompues). Ils occupent la base sans servir. |  |
 | Taille de la base de données | Info | Les tables les plus volumineuses de la base Jeedom. L'historique en représente presque toujours l'essentiel. |  |
