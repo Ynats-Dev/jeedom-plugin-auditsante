@@ -180,7 +180,7 @@ Nei controlli dei riferimenti interrotti, dei comandi senza dispositivo e della 
 
 ### Risalire più indietro nel tempo
 
-Per impostazione predefinita, Jeedom conserva i suoi backup sulla box solo per pochi giorni. Se li copia altrove (condivisione NAS, cartella sincronizzata con il cloud), monti quella cartella sulla box e aggiunga il suo percorso in **Cartelle di backup aggiuntive** (configurazione del plugin). I suoi backup verranno letti una volta, la notte seguente o subito dalla pagina del plugin. Un backup presente in due posti viene letto una sola volta; la data viene presa dal nome del file, più affidabile della data di una copia.
+Per impostazione predefinita, Jeedom conserva i suoi backup sulla box solo per pochi giorni. Se li copia altrove (condivisione NAS, cartella sincronizzata con il cloud), monti quella cartella sulla box e aggiunga il suo percorso in **Cartelle di backup aggiuntive** (configurazione del plugin). Le condivisioni di rete montate e le cartelle che contengono backup vi sono proposte con un clic. Il pulsante **Testa** verifica che Jeedom possa leggere la cartella, conta i suoi backup e controlla che il più recente contenga il database di Jeedom (`DB_backup.sql`). Vengono considerati solo i file `.tar.gz` presenti direttamente nella cartella. I backup vengono letti una volta, la notte seguente, dalla pagina del plugin o subito con **Leggi i backup ora**, che salva anche l'elenco delle cartelle. Un backup presente in due posti viene letto una sola volta; la data viene presa dal nome del file, più affidabile della data di una copia.
 
 ## Dove sono memorizzati i dati
 

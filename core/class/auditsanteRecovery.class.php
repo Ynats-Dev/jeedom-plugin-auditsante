@@ -227,6 +227,172 @@ class auditsanteRecovery {
   }
 
   /**
+   * Teste un dossier de sauvegardes avant de l'ajouter : accès, sauvegardes trouvées et contenu de la plus récente.
+   * Retourne {dir, ok, level (success|warning|danger), message, user, count, unreadable, size, newest, known, read,
+   * duplicates, archive (ok|missing|timeout|unchecked)}.
+   */
+  public static function testBackupDir($_dir) {
+    $dir = rtrim(trim((string) $_dir), '/');
+    $user = function_exists('posix_geteuid') && function_exists('posix_getpwuid') ? (posix_getpwuid(posix_geteuid())['name'] ?? '') : get_current_user();
+    $return = array('dir' => $dir, 'ok' => false, 'level' => 'danger', 'message' => '', 'user' => $user, 'count' => 0, 'unreadable' => 0,
+      'size' => null, 'newest' => null, 'known' => 0, 'read' => 0, 'duplicates' => 0, 'archive' => 'unchecked');
+    if ($dir === '' || $dir[0] !== '/') {
+      $return['message'] = __('Indiquez un chemin absolu, qui commence par /.', __FILE__);
+      return $return;
+    }
+    if (!file_exists($dir)) {
+      $return['message'] = __('Ce dossier n\'existe pas sur la box. Pour un partage NAS, vérifiez qu\'il est bien monté.', __FILE__);
+      return $return;
+    }
+    if (!is_dir($dir)) {
+      $return['message'] = __('Ce chemin désigne un fichier, pas un dossier.', __FILE__);
+      return $return;
+    }
+    if (!is_readable($dir) || @opendir($dir) === false) {
+      $return['message'] = sprintf(__('Jeedom (utilisateur %s) n\'a pas le droit de lire ce dossier.', __FILE__), $user);
+      return $return;
+    }
+    $state = self::state();
+    $jeedom = array();
+    foreach (array_keys(jeedom::listBackup()) as $path) {
+      $jeedom[basename($path) . '|' . (int) @filesize($path)] = true;
+    }
+    $files = array();
+    $size = 0;
+    foreach ((array) glob($dir . '/*.tar.gz') as $path) {
+      if (!is_file($path)) {
+        continue;
+      }
+      if (!is_readable($path)) {
+        $return['unreadable']++;
+        continue;
+      }
+      $fileSize = (int) filesize($path);
+      $key = basename($path) . '|' . $fileSize;
+      $size += $fileSize;
+      $files[] = array('path' => $path, 'name' => basename($path), 'size' => $fileSize, 'date' => self::backupDate($path));
+      if (isset($state['indexed'][$key])) {
+        $return['known']++;
+        if (!empty($state['indexed'][$key]['read'])) {
+          $return['read']++;
+        }
+      }
+      if (isset($jeedom[$key])) {
+        $return['duplicates']++;
+      }
+    }
+    $return['count'] = count($files);
+    $return['size'] = auditsanteTools::formatBytes($size);
+    if (count($files) == 0) {
+      $return['level'] = 'warning';
+      $return['message'] = $return['unreadable'] > 0
+        ? sprintf(__('%d sauvegarde(s) trouvée(s), mais Jeedom (utilisateur %s) ne peut pas les lire.', __FILE__), $return['unreadable'], $user)
+        : __('Dossier accessible, mais il ne contient aucune sauvegarde (.tar.gz). Les sous-dossiers ne sont pas parcourus.', __FILE__);
+      return $return;
+    }
+    usort($files, function ($_a, $_b) {
+      return strcmp($_b['date'], $_a['date']);
+    });
+    $newest = $files[0];
+    $return['newest'] = array('name' => $newest['name'], 'date' => $newest['date'], 'size' => auditsanteTools::formatBytes($newest['size']));
+    $return['archive'] = self::probeArchive($newest['path']);
+    $return['ok'] = true;
+    $return['level'] = ($return['archive'] == 'missing' || $return['unreadable'] > 0) ? 'warning' : 'success';
+    $return['message'] = sprintf(__('%d sauvegarde(s) lisible(s), %s au total.', __FILE__), $return['count'], $return['size']);
+    return $return;
+  }
+
+  /**
+   * Depuis la configuration : enregistre la liste des dossiers (sans attendre le bouton de sauvegarde de Jeedom) puis
+   * lance la lecture des sauvegardes jamais lues. Retourne {dirs, pending, size, job} ; job vaut null s'il n'y a rien à lire.
+   */
+  public static function readBackupDirs($_dirs) {
+    $dirs = array();
+    foreach (preg_split('/[\r\n]+/', (string) $_dirs) as $dir) {
+      $dir = rtrim(trim($dir), '/');
+      if ($dir !== '' && !in_array($dir, $dirs)) {
+        $dirs[] = $dir;
+      }
+    }
+    config::save('extraBackupDirs', implode("\n", $dirs), 'auditsante');
+    $job = self::job();
+    if (in_array($job['status'], array('running', 'auditing'))) {
+      return array('dirs' => $dirs, 'pending' => (int) $job['total'], 'size' => null, 'job' => $job);
+    }
+    $pending = self::pendingBackups();
+    $size = 0;
+    foreach ($pending as $file) {
+      $size += $file['size'];
+    }
+    return array('dirs' => $dirs, 'pending' => count($pending), 'size' => auditsanteTools::formatBytes($size),
+      'job' => count($pending) > 0 ? self::startJob('config') : null);
+  }
+
+  /**
+   * Vérifie qu'une archive contient la base de Jeedom, sans l'extraire. La liste s'arrête dès que DB_backup.sql est
+   * trouvé, avec une limite de temps pour une archive volumineuse sur un partage lent : ok, missing ou timeout.
+   */
+  private static function probeArchive($_path) {
+    $command = 'timeout 20 tar -tzf ' . escapeshellarg($_path) . ' 2>/dev/null | grep -m1 -c ' . escapeshellarg('DB_backup\.sql$');
+    $output = array();
+    // Deux lignes : le nombre de DB_backup.sql trouvés (0 ou 1), puis le code de sortie de timeout (124 = délai dépassé)
+    exec('bash -c ' . escapeshellarg($command . '; echo "${PIPESTATUS[0]}"'), $output);
+    $found = isset($output[0]) && (int) $output[0] > 0;
+    if ($found) {
+      return 'ok';
+    }
+    $tarStatus = isset($output[1]) ? (int) $output[1] : 0;
+    return ($tarStatus == 124) ? 'timeout' : 'missing';
+  }
+
+  /**
+   * Dossiers proposés : partages réseau montés sur la box (CIFS, NFS, SSHFS...) et dossiers usuels qui contiennent
+   * des sauvegardes. Retourne [{dir, label, count}].
+   */
+  public static function suggestBackupDirs() {
+    $candidates = array();
+    $mountPoints = array();
+    $mounts = @file('/proc/mounts', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ((array) $mounts as $line) {
+      $parts = preg_split('/\s+/', $line);
+      if (count($parts) < 3 || !preg_match('/^(cifs|smb3|nfs4?|fuse\.sshfs|fuse\.rclone|davfs)$/', $parts[2])) {
+        continue;
+      }
+      // /proc/mounts échappe les espaces en \040
+      $mount = rtrim(str_replace('\040', ' ', $parts[1]), '/');
+      $label = $parts[2] . ' ' . $parts[0];
+      $mountPoints[$mount] = true;
+      $candidates[$mount] = $label;
+      foreach ((array) glob($mount . '/*', GLOB_ONLYDIR) as $sub) {
+        $candidates[$sub] = $label;
+      }
+    }
+    foreach (array('/mnt/*', '/media/*', '/media/*/*') as $pattern) {
+      foreach ((array) glob($pattern, GLOB_ONLYDIR) as $dir) {
+        if (!isset($candidates[$dir])) {
+          $candidates[$dir] = '';
+        }
+      }
+    }
+    $configured = array_flip(self::extraDirs());
+    $return = array();
+    foreach ($candidates as $dir => $label) {
+      if (isset($configured[$dir]) || !is_readable($dir)) {
+        continue;
+      }
+      $count = count((array) glob($dir . '/*.tar.gz'));
+      // Un point de montage réseau est proposé même vide : les sauvegardes sont peut-être dans un sous-dossier
+      if ($count > 0 || isset($mountPoints[$dir])) {
+        $return[] = array('dir' => $dir, 'label' => $label, 'count' => $count);
+      }
+    }
+    usort($return, function ($_a, $_b) {
+      return $_b['count'] - $_a['count'];
+    });
+    return array_slice($return, 0, 20);
+  }
+
+  /**
    * Date d'une sauvegarde : celle de son nom (backup-...-2026-11-20-09h28.tar.gz), plus fiable que la date du fichier
    * pour une copie (NAS, cloud), sinon la date du fichier.
    */

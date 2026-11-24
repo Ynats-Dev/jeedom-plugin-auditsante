@@ -152,6 +152,7 @@
       dataStore: 'fas fa-code', cron: 'far fa-clock', administration: 'fas fa-wrench', user: 'far fa-user', update: 'fas fa-sync-alt'
     }
     if (match && icons[match[1]]) return icons[match[1]]
+    if (/[?&]modal=dataStore\./.test(_url)) return icons.dataStore
     return /[?&]m=/.test(_url) ? 'fas fa-microchip' : 'fas fa-link'
   }
 
@@ -1153,6 +1154,18 @@
     if (document.getElementById('bt_saLogs')) {
       document.getElementById('bt_saLogs').addEventListener('click', showLogs)
     }
+
+    /* Les modales du core (ex. variables) ne sont pas des pages : on les ouvre dans une fenêtre Jeedom. */
+    document.getElementById('div_saReport').addEventListener('click', function (event) {
+      var link = event.target.closest('a[href*="modal="], a[href*="p=dataStore"]')
+      if (!link || typeof jeeDialog === 'undefined' || typeof jeeDialog.dialog !== 'function') return
+      event.preventDefault()
+      var url = link.getAttribute('href')
+      // Rapports enregistrés avant la correction : la page p=dataStore n'existe pas dans le core
+      if (/[?&]p=dataStore\b/.test(url)) url = 'index.php?v=d&modal=dataStore.management&type=scenario'
+      var title = /modal=dataStore\./.test(url) ? '{{Variables}}' : (link.getAttribute('title') || '')
+      jeeDialog.dialog({ id: 'jee_modal', title: title, contentUrl: url })
+    })
 
     function setFilter(_filter) {
       state.filter = _filter

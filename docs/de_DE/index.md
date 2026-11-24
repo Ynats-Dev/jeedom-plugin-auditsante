@@ -180,7 +180,7 @@ In den Prüfungen zu defekten Verweisen, Befehlen ohne Gerät und verwaistem Ver
 
 ### Weiter in die Vergangenheit zurückgehen
 
-Standardmäßig behält Jeedom seine Sicherungen nur wenige Tage auf der Box. Wenn Sie sie anderswo hin kopieren (NAS-Freigabe, mit der Cloud synchronisierter Ordner), binden Sie diesen Ordner auf der Box ein und fügen Sie seinen Pfad unter **Zusätzliche Sicherungsordner** hinzu (Plugin-Konfiguration). Seine Sicherungen werden einmal gelesen, in der nächsten Nacht oder sofort über die Plugin-Seite. Eine an zwei Orten vorhandene Sicherung wird nur einmal gelesen; das Datum wird aus dem Dateinamen entnommen, was zuverlässiger ist als das Datum einer Kopie.
+Standardmäßig behält Jeedom seine Sicherungen nur wenige Tage auf der Box. Wenn Sie sie anderswo hin kopieren (NAS-Freigabe, mit der Cloud synchronisierter Ordner), binden Sie diesen Ordner auf der Box ein und fügen Sie seinen Pfad unter **Zusätzliche Sicherungsordner** hinzu (Plugin-Konfiguration). Eingebundene Netzwerkfreigaben und Ordner mit Sicherungen werden dort mit einem Klick vorgeschlagen. Die Schaltfläche **Testen** prüft, ob Jeedom den Ordner lesen kann, zählt seine Sicherungen und prüft, ob die neueste die Jeedom-Datenbank (`DB_backup.sql`) enthält. Nur `.tar.gz`-Dateien, die direkt im Ordner liegen, werden berücksichtigt. Die Sicherungen werden einmal gelesen, in der nächsten Nacht, über die Plugin-Seite oder sofort mit **Sicherungen jetzt lesen**, das auch die Ordnerliste speichert. Eine an zwei Orten vorhandene Sicherung wird nur einmal gelesen; das Datum wird aus dem Dateinamen entnommen, was zuverlässiger ist als das Datum einer Kopie.
 
 ## Wo die Daten gespeichert werden
 

@@ -58,6 +58,22 @@ try {
     ajax::success(auditsanteRecovery::job());
   }
 
+  // Configuration : teste un dossier de sauvegardes (accès, sauvegardes trouvées, contenu de la plus récente)
+  if (init('action') == 'testBackupDir') {
+    @set_time_limit(60);
+    ajax::success(auditsanteRecovery::testBackupDir(init('dir')));
+  }
+
+  // Configuration : dossiers enregistrés et dossiers proposés (partages réseau montés, dossiers contenant des sauvegardes)
+  if (init('action') == 'backupDirs') {
+    ajax::success(array('dirs' => auditsanteRecovery::extraDirs(), 'suggestions' => auditsanteRecovery::suggestBackupDirs()));
+  }
+
+  // Configuration : enregistre les dossiers puis lit les sauvegardes jamais lues, en tâche de fond
+  if (init('action') == 'readBackupDirs') {
+    ajax::success(auditsanteRecovery::readBackupDirs(init('dirs')));
+  }
+
   // Applique la correction automatique d'un contrôle
   if (init('action') == 'applyFix') {
     @set_time_limit(300);

@@ -180,7 +180,7 @@ Dans les contrôles de références cassées, de commandes sans équipement et d
 
 ### Remonter plus loin dans le temps
 
-Par défaut, Jeedom ne garde ses sauvegardes que quelques jours sur la box. Si vous en copiez ailleurs (partage NAS, dossier synchronisé avec le cloud), montez ce dossier sur la box et ajoutez son chemin dans **Dossiers de sauvegardes supplémentaires** (configuration du plugin). Ses sauvegardes seront lues une fois, la nuit suivante ou tout de suite depuis la page du plugin. Une même sauvegarde présente à deux endroits n'est lue qu'une fois ; la date est prise dans le nom du fichier, plus fiable que la date d'une copie.
+Par défaut, Jeedom ne garde ses sauvegardes que quelques jours sur la box. Si vous en copiez ailleurs (partage NAS, dossier synchronisé avec le cloud), montez ce dossier sur la box et ajoutez-le dans **Dossiers de sauvegardes supplémentaires** (configuration du plugin). Les partages réseau montés et les dossiers qui contiennent des sauvegardes y sont proposés en un clic. Le bouton **Tester** vérifie que Jeedom peut lire le dossier, compte ses sauvegardes et contrôle que la plus récente contient bien la base de Jeedom (`DB_backup.sql`). Seuls les fichiers `.tar.gz` placés directement dans le dossier sont pris en compte. Les sauvegardes sont lues une fois, la nuit suivante, depuis la page du plugin, ou tout de suite avec **Lire les sauvegardes maintenant**, qui enregistre aussi la liste des dossiers. Une même sauvegarde présente à deux endroits n'est lue qu'une fois ; la date est prise dans le nom du fichier, plus fiable que la date d'une copie.
 
 ## Où sont stockées les données
 

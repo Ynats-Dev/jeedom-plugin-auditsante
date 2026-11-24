@@ -377,7 +377,7 @@ class auditsanteChecks {
         'title' => __('Variables inutilisées', __FILE__),
         'description' => __('Variables de scénario qu\'aucun scénario, équipement ou interaction ne lit ni n\'écrit. Ce sont souvent des restes de scénarios supprimés. Celles utilisées seulement dans un bloc code ou par un programme externe apparaissent aussi.', __FILE__),
         'recommendation' => __('Supprimez-les depuis Outils > Variables (bouton « Supprimer » ou action remove_variable).', __FILE__),
-        'fix' => array('type' => 'link', 'label' => __('Variables', __FILE__), 'url' => 'index.php?v=d&p=dataStore'),
+        'fix' => array('type' => 'link', 'label' => __('Variables', __FILE__), 'url' => 'index.php?v=d&modal=dataStore.management&type=scenario'),
       ),
       'datastore_orphan' => array(
         'category' => 'data',
@@ -1527,6 +1527,15 @@ class auditsanteChecks {
 
   private static function check_variables_unused() {
     $corpus = auditsanteIndex::corpus();
+    // Designs et vues : leur code HTML ou JS peut citer la variable par son seul nom, entre guillemets
+    $displays = '';
+    foreach (auditsanteIndex::consumers() as $consumer) {
+      if (in_array($consumer['kind'], array('plan', 'plan3d', 'view'))) {
+        $displays .= "\n" . $consumer['text'];
+      }
+    }
+    // Guillemet tel qu'il peut être stocké : brut, échappé en JSON (\" , \\\"), ou en entité HTML (&quot; &#39;)
+    $quote = '(?:\\\\*["\']|&quot;|&#0?34;|&#0?39;|&apos;)';
     $items = array();
     $total = 0;
     foreach (self::query("SELECT id, `key`, `value` FROM dataStore WHERE type = 'scenario' AND link_id = -1") as $row) {
@@ -1535,21 +1544,37 @@ class auditsanteChecks {
       if ($name === '') {
         continue;
       }
-      $quoted = preg_quote($name, '/');
-      $used = stripos($corpus, $name) !== false && preg_match('/variable\(\s*["\']?' . $quoted . '["\']?\s*[,)]|\\\\?"(?:name|variable)\\\\?"\s*:\s*\\\\?"' . $quoted . '\\\\?"/i', $corpus);
-      if ($used) {
+      if (self::variableUsed($name, $corpus, $displays, $quote)) {
         continue;
       }
       $value = (string) $row['value'];
       if (function_exists('mb_strlen') ? mb_strlen($value) > 40 : strlen($value) > 40) {
         $value = (function_exists('mb_substr') ? mb_substr($value, 0, 40) : substr($value, 0, 40)) . '...';
       }
-      $items[] = self::item($name . ' = ' . $value, 'index.php?v=d&p=dataStore');
+      $items[] = self::item($name . ' = ' . $value, 'index.php?v=d&modal=dataStore.management&type=scenario');
     }
     if (count($items) == 0) {
       return self::pass(sprintf(__('Les %d variable(s) sont utilisées.', __FILE__), $total));
     }
     return self::warn(sprintf(__('%d variable(s) sur %d utilisée(s) nulle part.', __FILE__), count($items), $total), $items);
+  }
+
+  /**
+   * Une variable est utilisée si un élément la lit ou l'écrit : variable(nom) ou variable("nom", ...), champ
+   * « name » ou « variable » d'une action (JSON), ou son nom entre guillemets dans le code d'un design ou d'une vue.
+   */
+  private static function variableUsed($_name, $_corpus, $_displays, $_quote) {
+    if (stripos($_corpus, $_name) === false) {
+      return false;
+    }
+    $name = preg_quote($_name, '/');
+    if (preg_match('/variable\s*\(\s*' . $_quote . '?\s*' . $name . '\s*' . $_quote . '?\s*[,)]/i', $_corpus)) {
+      return true;
+    }
+    if (preg_match('/' . $_quote . '(?:name|variable)' . $_quote . '\s*:\s*' . $_quote . $name . $_quote . '/i', $_corpus)) {
+      return true;
+    }
+    return $_displays !== '' && stripos($_displays, $_name) !== false && preg_match('/' . $_quote . $name . $_quote . '/i', $_displays) === 1;
   }
 
   /** Variables rattachées à un scénario ou un équipement supprimé : [ligne] */

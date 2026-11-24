@@ -180,7 +180,7 @@ En las comprobaciones de referencias rotas, comandos sin equipo e historial hué
 
 ### Remontarse más atrás en el tiempo
 
-Por defecto, Jeedom solo conserva sus copias de seguridad unos días en la box. Si las copia en otro lugar (recurso NAS, carpeta sincronizada con la nube), monte esa carpeta en la box y añada su ruta en **Carpetas de copias de seguridad adicionales** (configuración del plugin). Sus copias de seguridad se leerán una vez, la noche siguiente o enseguida desde la página del plugin. Una copia de seguridad presente en dos lugares se lee una sola vez; la fecha se toma del nombre del archivo, más fiable que la fecha de una copia.
+Por defecto, Jeedom solo conserva sus copias de seguridad unos días en la box. Si las copia en otro lugar (recurso NAS, carpeta sincronizada con la nube), monte esa carpeta en la box y añada su ruta en **Carpetas de copias de seguridad adicionales** (configuración del plugin). Allí se proponen en un clic los recursos de red montados y las carpetas que contienen copias de seguridad. El botón **Probar** comprueba que Jeedom puede leer la carpeta, cuenta sus copias y verifica que la más reciente contiene la base de datos de Jeedom (`DB_backup.sql`). Solo se tienen en cuenta los archivos `.tar.gz` situados directamente en la carpeta. Las copias se leen una vez, la noche siguiente, desde la página del plugin o enseguida con **Leer las copias ahora**, que también guarda la lista de carpetas. Una copia de seguridad presente en dos lugares se lee una sola vez; la fecha se toma del nombre del archivo, más fiable que la fecha de una copia.
 
 ## Dónde se guardan los datos
 

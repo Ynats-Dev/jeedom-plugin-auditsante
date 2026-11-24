@@ -180,7 +180,7 @@ In the checks for broken references, commands without a device and orphan histor
 
 ### Going further back in time
 
-By default, Jeedom keeps its backups on the box for only a few days. If you copy them elsewhere (NAS share, folder synchronized with the cloud), mount that folder on the box and add its path in **Additional backup folders** (plugin configuration). Its backups will be read once, the next night or right away from the plugin page. A backup present in two places is read only once; the date is taken from the file name, more reliable than the date of a copy.
+By default, Jeedom keeps its backups on the box for only a few days. If you copy them elsewhere (NAS share, folder synchronized with the cloud), mount that folder on the box and add its path in **Additional backup folders** (plugin configuration). Mounted network shares and folders containing backups are suggested there in one click. The **Test** button checks that Jeedom can read the folder, counts its backups and checks that the most recent one does contain the Jeedom database (`DB_backup.sql`). Only `.tar.gz` files placed directly in the folder are taken into account. Backups are read once, the next night, from the plugin page, or right away with **Read backups now**, which also saves the folder list. A backup present in two places is read only once; the date is taken from the file name, more reliable than the date of a copy.
 
 ## Where the data is stored
 
