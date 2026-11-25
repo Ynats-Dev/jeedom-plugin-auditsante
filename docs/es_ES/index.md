@@ -225,7 +225,7 @@ Ejemplo: un escenario semanal que le envía el resumen, o que le avisa cuando **
 
 ## Límites
 
-- Un comando usado solo en un **bloque código** de un escenario, por su nombre (`cmd::byString('#[Salón][Lámpara][Estado]#')`), no se reconoce: el equipo puede aparecer como huérfano, y una variable leída de esa forma como sin usar.
+- Un comando usado solo en un **bloque código** de un escenario, por su nombre (`cmd::byString('#[Salón][Lámpara][Estado]#')`), no se reconoce: el equipo puede aparecer como huérfano. Una variable se reconoce ahí si su nombre completo figura entre comillas (`getData('SL_cycle')`, o un array de nombres); si su nombre se compone (`getData('SL_' . $nombre)`), aparece como sin usar.
 - Un escenario ejecutado solo por la **API**, un programa externo o la aplicación móvil aparece como « que nunca puede ejecutarse ». Ignore la comprobación en ese caso.
 - Los plugins que guardan sus vínculos fuera de la configuración de sus equipos o comandos no se detectan.
 - « Equipo mudo » se basa en la fecha del último valor recibido, que se reinicia con un reinicio que vacía la caché.

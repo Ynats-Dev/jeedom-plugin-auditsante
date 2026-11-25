@@ -225,7 +225,7 @@ Esempio: uno scenario settimanale che le invia il riepilogo, o che la avvisa qua
 
 ## Limiti
 
-- Un comando usato solo in un **blocco codice** di uno scenario, tramite il suo nome (`cmd::byString('#[Soggiorno][Lampada][Stato]#')`), non viene riconosciuto: il dispositivo può apparire come orfano, e una variabile letta in questo modo come inutilizzata.
+- Un comando usato solo in un **blocco codice** di uno scenario, tramite il suo nome (`cmd::byString('#[Soggiorno][Lampada][Stato]#')`), non viene riconosciuto: il dispositivo può apparire come orfano. Una variabile vi è riconosciuta se il suo nome completo compare tra virgolette (`getData('SL_cycle')`, o un array di nomi); se il suo nome è composto (`getData('SL_' . $nome)`), appare come inutilizzata.
 - Uno scenario avviato solo dall'**API**, da un programma esterno o dall'app mobile appare come « che non può mai avviarsi ». In tal caso ignori il controllo.
 - I plugin che memorizzano i loro collegamenti al di fuori della configurazione dei propri dispositivi o comandi non vengono rilevati.
 - « Dispositivo muto » si basa sulla data dell'ultimo valore ricevuto, che viene azzerata da un riavvio che svuota la cache.

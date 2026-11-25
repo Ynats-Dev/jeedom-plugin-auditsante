@@ -225,7 +225,7 @@ Exemple : un scénario hebdomadaire qui vous envoie le résumé, ou qui vous pr�
 
 ## Limites
 
-- Une commande utilisée seulement dans un **bloc code** d'un scénario, par son nom (`cmd::byString('#[Salon][Lampe][Etat]#')`), n'est pas reconnue : l'équipement peut apparaître comme orphelin, et une variable lue de cette façon comme inutilisée.
+- Une commande utilisée seulement dans un **bloc code** d'un scénario, par son nom (`cmd::byString('#[Salon][Lampe][Etat]#')`), n'est pas reconnue : l'équipement peut apparaître comme orphelin. Une variable y est reconnue si son nom complet figure entre guillemets (`getData('SL_cycle')`, ou un tableau de noms) ; si son nom est assemblé (`getData('SL_' . $nom)`), elle apparaît comme inutilisée.
 - Un scénario lancé uniquement par l'**API**, un programme externe ou l'application mobile apparaît comme « ne pouvant jamais se lancer ». Ignorez le contrôle dans ce cas.
 - Les plugins qui enregistrent leurs liens ailleurs que dans la configuration de leurs équipements ou commandes ne sont pas vus.
 - Les compteurs « équipement muet » reposent sur la date de dernière valeur reçue, remise à zéro par un redémarrage qui vide le cache.

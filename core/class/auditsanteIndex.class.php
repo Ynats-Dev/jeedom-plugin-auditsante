@@ -257,6 +257,7 @@ class auditsanteIndex {
         }
       }
       $texts = array();
+      $codes = '';
       $orphanExpressions = 0;
       foreach ($expressions as $row) {
         $subElement = (int) $row['scenarioSubElement_id'];
@@ -270,6 +271,9 @@ class auditsanteIndex {
           $texts[$scenarioId] = '';
         }
         $texts[$scenarioId] .= ' ' . $row['expression'] . ' ' . $row['options'];
+        if ($row['type'] == 'code') {
+          $codes .= "\n" . $row['expression'];
+        }
       }
       $orphanElements = 0;
       foreach ($elements as $id => $true) {
@@ -285,6 +289,7 @@ class auditsanteIndex {
       }
       return array(
         'texts' => $texts,
+        'codes' => $codes,
         'elementCount' => $elementCount,
         'orphans' => array('elements' => $orphanElements, 'subElements' => $orphanSubElements, 'expressions' => $orphanExpressions),
       );

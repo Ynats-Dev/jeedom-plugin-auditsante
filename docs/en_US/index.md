@@ -225,7 +225,7 @@ Example: a weekly scenario that sends you the summary, or warns you when **Serio
 
 ## Limits
 
-- A command used only in a scenario **code block**, by its name (`cmd::byString('#[Living room][Lamp][State]#')`), is not recognized: the device may appear as an orphan, and a variable read that way as unused.
+- A command used only in a scenario **code block**, by its name (`cmd::byString('#[Living room][Lamp][State]#')`), is not recognized: the device may appear as an orphan. A variable is recognized there if its full name appears in quotes (`getData('SL_cycle')`, or an array of names); if its name is assembled (`getData('SL_' . $name)`), it appears as unused.
 - A scenario run only by the **API**, an external program or the mobile app appears as « can never run ». Ignore the check in that case.
 - Plugins that store their links elsewhere than in the configuration of their devices or commands are not seen.
 - « Silent device » relies on the date of the last value received, which is reset by a restart that clears the cache.

@@ -1527,11 +1527,12 @@ class auditsanteChecks {
 
   private static function check_variables_unused() {
     $corpus = auditsanteIndex::corpus();
-    // Designs et vues : leur code HTML ou JS peut citer la variable par son seul nom, entre guillemets
-    $displays = '';
+    // Code libre (blocs code des scénarios, HTML ou JS des designs et vues) : il peut citer la variable par son seul
+    // nom, entre guillemets, par exemple dans un tableau parcouru ensuite avec getData($nom)
+    $code = auditsanteIndex::scenarioContent()['codes'];
     foreach (auditsanteIndex::consumers() as $consumer) {
       if (in_array($consumer['kind'], array('plan', 'plan3d', 'view'))) {
-        $displays .= "\n" . $consumer['text'];
+        $code .= "\n" . $consumer['text'];
       }
     }
     // Guillemet tel qu'il peut être stocké : brut, échappé en JSON (\" , \\\"), ou en entité HTML (&quot; &#39;)
@@ -1544,7 +1545,7 @@ class auditsanteChecks {
       if ($name === '') {
         continue;
       }
-      if (self::variableUsed($name, $corpus, $displays, $quote)) {
+      if (self::variableUsed($name, $corpus, $code, $quote)) {
         continue;
       }
       $value = (string) $row['value'];
@@ -1561,10 +1562,10 @@ class auditsanteChecks {
 
   /**
    * Une variable est utilisée si un élément la lit ou l'écrit : variable(nom) ou variable("nom", ...), champ
-   * « name » ou « variable » d'une action (JSON), setData/getData/removeData dans un bloc code, ou son nom entre
-   * guillemets dans le code d'un design ou d'une vue.
+   * « name » ou « variable » d'une action (JSON), setData/getData/removeData, ou son nom entre guillemets
+   * dans un bloc code de scénario ou dans le code d'un design ou d'une vue.
    */
-  private static function variableUsed($_name, $_corpus, $_displays, $_quote) {
+  private static function variableUsed($_name, $_corpus, $_code, $_quote) {
     if (stripos($_corpus, $_name) === false) {
       return false;
     }
@@ -1579,7 +1580,7 @@ class auditsanteChecks {
     if (preg_match('/(?:(?:set|get|remove)Data|byTypeLinkIdKey\s*\([^)]*?,)\s*\(?\s*' . $_quote . $name . $_quote . '/i', $_corpus)) {
       return true;
     }
-    return $_displays !== '' && stripos($_displays, $_name) !== false && preg_match('/' . $_quote . $name . $_quote . '/i', $_displays) === 1;
+    return $_code !== '' && stripos($_code, $_name) !== false && preg_match('/' . $_quote . $name . $_quote . '/i', $_code) === 1;
   }
 
   /** Variables rattachées à un scénario ou un équipement supprimé : [ligne] */

@@ -225,7 +225,7 @@ Beispiel: ein wöchentliches Szenario, das Ihnen die Zusammenfassung sendet oder
 
 ## Grenzen
 
-- Ein Befehl, der nur in einem **Code-Block** eines Szenarios über seinen Namen verwendet wird (`cmd::byString('#[Wohnzimmer][Lampe][Zustand]#')`), wird nicht erkannt: Das Gerät kann als verwaist erscheinen und eine auf diese Weise gelesene Variable als unbenutzt.
+- Ein Befehl, der nur in einem **Code-Block** eines Szenarios über seinen Namen verwendet wird (`cmd::byString('#[Wohnzimmer][Lampe][Zustand]#')`), wird nicht erkannt: Das Gerät kann als verwaist erscheinen. Eine Variable wird dort erkannt, wenn ihr vollständiger Name in Anführungszeichen steht (`getData('SL_cycle')` oder ein Array mit Namen); wird ihr Name zusammengesetzt (`getData('SL_' . $name)`), erscheint sie als unbenutzt.
 - Ein Szenario, das nur von der **API**, einem externen Programm oder der mobilen App gestartet wird, erscheint als « kann nie starten ». Ignorieren Sie die Prüfung in diesem Fall.
 - Plugins, die ihre Verknüpfungen anderswo als in der Konfiguration ihrer Geräte oder Befehle speichern, werden nicht erfasst.
 - « Stummes Gerät » beruht auf dem Datum des zuletzt empfangenen Werts, das durch einen Neustart, der den Cache leert, zurückgesetzt wird.
