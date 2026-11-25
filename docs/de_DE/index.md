@@ -114,7 +114,7 @@ Das Plugin liest die gesamte Installation einmal (Objekte, Geräte, Befehle, Sze
 
 | Prüfung | Bedeutung | Was gesucht wird | Automatische Korrektur |
 |---|---|---|---|
-| Unbenutzte Variablen | Niedrig | Szenariovariablen, die kein Szenario (einschließlich Codeblöcken), Gerät, keine Interaktion, Ansicht oder kein Design liest oder schreibt. Oft sind es Überbleibsel gelöschter Szenarien. Variablen, die nur von einem externen Programm (API) oder einem Plugin mit eigener Konfiguration verwendet werden, erscheinen ebenfalls. |  |
+| Unbenutzte Variablen | Niedrig | Szenariovariablen, die kein Szenario (einschließlich Codeblöcken), Gerät, keine Interaktion, Ansicht oder kein Design liest oder schreibt. Oft sind es Überbleibsel gelöschter Szenarien. Variablen, die nur von einem externen Programm (API) oder einem Plugin mit eigener Konfiguration verwendet werden, erscheinen ebenfalls. Die Prüfung deckt die Verwendungen ab, die Jeedom unter Werkzeuge > Variablen anzeigt, und durchsucht zusätzlich Codeblöcke, Ansichten und Designs. |  |
 | Variablen gelöschter Elemente | Niedrig | Variablen, die an ein nicht mehr existierendes Szenario oder Gerät gebunden sind. | Ja |
 | Verwaiste Szenarioblöcke | Niedrig | Blöcke, Unterblöcke und Ausdrücke von Szenarien, die keinem Szenario mehr zugeordnet sind (Reste abgebrochener Löschungen oder Kopien). Sie belegen die Datenbank ohne Nutzen. |  |
 | Größe der Datenbank | Info | Die größten Tabellen der Jeedom-Datenbank. Der Verlauf macht fast immer den Großteil aus. |  |
@@ -225,7 +225,8 @@ Beispiel: ein wöchentliches Szenario, das Ihnen die Zusammenfassung sendet oder
 
 ## Grenzen
 
-- Ein Befehl, der nur in einem **Code-Block** eines Szenarios über seinen Namen verwendet wird (`cmd::byString('#[Wohnzimmer][Lampe][Zustand]#')`), wird nicht erkannt: Das Gerät kann als verwaist erscheinen. Eine Variable wird dort erkannt, wenn ihr vollständiger Name in Anführungszeichen steht (`getData('SL_cycle')` oder ein Array mit Namen); wird ihr Name zusammengesetzt (`getData('SL_' . $name)`), erscheint sie als unbenutzt.
+- Ein Befehl, der nur in einem **Code-Block** eines Szenarios über seinen Namen verwendet wird (`cmd::byString('#[Wohnzimmer][Lampe][Zustand]#')`), wird nicht erkannt: Das Gerät kann als verwaist erscheinen.
+- In einem **Code-Block** wird eine Variable erkannt, wenn ihr vollständiger Name in Anführungszeichen steht (`getData('SL_cycle')` oder ein Array mit Namen); wird ihr Name zusammengesetzt (`getData('SL_' . $name)`), erscheint sie als unbenutzt. Umgekehrt zählt ein Name in Anführungszeichen, der nicht wirklich verwendet wird (zum Beispiel in einem Kommentar), als Verwendung.
 - Ein Szenario, das nur von der **API**, einem externen Programm oder der mobilen App gestartet wird, erscheint als « kann nie starten ». Ignorieren Sie die Prüfung in diesem Fall.
 - Plugins, die ihre Verknüpfungen anderswo als in der Konfiguration ihrer Geräte oder Befehle speichern, werden nicht erfasst.
 - « Stummes Gerät » beruht auf dem Datum des zuletzt empfangenen Werts, das durch einen Neustart, der den Cache leert, zurückgesetzt wird.

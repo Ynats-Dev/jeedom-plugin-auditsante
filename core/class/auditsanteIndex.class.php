@@ -258,6 +258,7 @@ class auditsanteIndex {
       }
       $texts = array();
       $codes = '';
+      $variableOptions = '';
       $orphanExpressions = 0;
       foreach ($expressions as $row) {
         $subElement = (int) $row['scenarioSubElement_id'];
@@ -273,6 +274,8 @@ class auditsanteIndex {
         $texts[$scenarioId] .= ' ' . $row['expression'] . ' ' . $row['options'];
         if ($row['type'] == 'code') {
           $codes .= "\n" . $row['expression'];
+        } elseif (stripos((string) $row['expression'], 'variable') !== false) {
+          $variableOptions .= "\n" . $row['options'];
         }
       }
       $orphanElements = 0;
@@ -290,6 +293,7 @@ class auditsanteIndex {
       return array(
         'texts' => $texts,
         'codes' => $codes,
+        'variableOptions' => $variableOptions,
         'elementCount' => $elementCount,
         'orphans' => array('elements' => $orphanElements, 'subElements' => $orphanSubElements, 'expressions' => $orphanExpressions),
       );
@@ -637,6 +641,20 @@ class auditsanteIndex {
       $text = '';
       foreach (self::consumers() as $consumer) {
         $text .= "\n" . $consumer['text'];
+      }
+      return $text;
+    });
+  }
+
+  /**
+   * Actions des phrases d'interaction générées qui citent une variable. Hors consommateurs : ce sont des copies
+   * de interactDef, leurs références seraient signalées deux fois.
+   */
+  public static function interactQueryActions() {
+    return self::memo('interactQueryActions', function () {
+      $text = '';
+      foreach (self::query("SELECT DISTINCT q.actions FROM interactQuery q INNER JOIN interactDef d ON d.id = q.interactDef_id WHERE q.actions LIKE '%variable%'") as $row) {
+        $text .= "\n" . $row['actions'];
       }
       return $text;
     });

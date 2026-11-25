@@ -114,7 +114,7 @@ The plugin reads the whole installation once (objects, devices, commands, scenar
 
 | Check | Importance | What is looked for | Auto fix |
 |---|---|---|---|
-| Unused variables | Low | Scenario variables that no scenario (code blocks included), device, interaction, view or design reads or writes. They are often leftovers from deleted scenarios. Those used only by an external program (API) or by a plugin that keeps its own configuration also appear. |  |
+| Unused variables | Low | Scenario variables that no scenario (code blocks included), device, interaction, view or design reads or writes. They are often leftovers from deleted scenarios. Those used only by an external program (API) or by a plugin that keeps its own configuration also appear. The check covers the uses Jeedom shows in Tools > Variables, and also searches code blocks, views and designs. |  |
 | Variables of deleted items | Low | Variables attached to a scenario or device that no longer exists. | Yes |
 | Orphan scenario blocks | Low | Scenario blocks, sub-blocks and expressions that are no longer attached to any scenario (leftovers of interrupted deletions or copies). They take up database space for nothing. |  |
 | Database size | Info | The largest tables of the Jeedom database. History almost always accounts for most of it. |  |
@@ -225,7 +225,8 @@ Example: a weekly scenario that sends you the summary, or warns you when **Serio
 
 ## Limits
 
-- A command used only in a scenario **code block**, by its name (`cmd::byString('#[Living room][Lamp][State]#')`), is not recognized: the device may appear as an orphan. A variable is recognized there if its full name appears in quotes (`getData('SL_cycle')`, or an array of names); if its name is assembled (`getData('SL_' . $name)`), it appears as unused.
+- A command used only in a scenario **code block**, by its name (`cmd::byString('#[Living room][Lamp][State]#')`), is not recognized: the device may appear as an orphan.
+- In a **code block**, a variable is recognized if its full name appears in quotes (`getData('SL_cycle')`, or an array of names); if its name is assembled (`getData('SL_' . $name)`), it appears as unused. Conversely, a name in quotes that is not really used (in a comment, for example) counts as a use.
 - A scenario run only by the **API**, an external program or the mobile app appears as « can never run ». Ignore the check in that case.
 - Plugins that store their links elsewhere than in the configuration of their devices or commands are not seen.
 - « Silent device » relies on the date of the last value received, which is reset by a restart that clears the cache.

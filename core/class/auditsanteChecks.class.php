@@ -1526,10 +1526,11 @@ class auditsanteChecks {
   /* ************************************************************************************ */
 
   private static function check_variables_unused() {
-    $corpus = auditsanteIndex::corpus();
+    $corpus = auditsanteIndex::corpus() . auditsanteIndex::interactQueryActions();
+    $content = auditsanteIndex::scenarioContent();
     // Code libre (blocs code des scénarios, HTML ou JS des designs et vues) : il peut citer la variable par son seul
     // nom, entre guillemets, par exemple dans un tableau parcouru ensuite avec getData($nom)
-    $code = auditsanteIndex::scenarioContent()['codes'];
+    $code = $content['codes'];
     foreach (auditsanteIndex::consumers() as $consumer) {
       if (in_array($consumer['kind'], array('plan', 'plan3d', 'view'))) {
         $code .= "\n" . $consumer['text'];
@@ -1545,7 +1546,7 @@ class auditsanteChecks {
       if ($name === '') {
         continue;
       }
-      if (self::variableUsed($name, $corpus, $code, $quote)) {
+      if (self::variableUsed($name, $corpus, $code, $content['variableOptions'], $quote)) {
         continue;
       }
       $value = (string) $row['value'];
@@ -1563,9 +1564,10 @@ class auditsanteChecks {
   /**
    * Une variable est utilisée si un élément la lit ou l'écrit : variable(nom) ou variable("nom", ...), champ
    * « name » ou « variable » d'une action (JSON), setData/getData/removeData, ou son nom entre guillemets
-   * dans un bloc code de scénario ou dans le code d'un design ou d'une vue.
+   * dans un bloc code de scénario ou dans le code d'un design ou d'une vue. Comme dataStore::getUsedBy() du core,
+   * accepte aussi le nom comme valeur de n'importe quel champ d'une action « variable » de scénario.
    */
-  private static function variableUsed($_name, $_corpus, $_code, $_quote) {
+  private static function variableUsed($_name, $_corpus, $_code, $_variableOptions, $_quote) {
     if (stripos($_corpus, $_name) === false) {
       return false;
     }
@@ -1574,6 +1576,9 @@ class auditsanteChecks {
       return true;
     }
     if (preg_match('/' . $_quote . '(?:name|variable)' . $_quote . '\s*:\s*' . $_quote . $name . $_quote . '/i', $_corpus)) {
+      return true;
+    }
+    if (preg_match('/:\s*' . $_quote . $name . $_quote . '/i', $_variableOptions)) {
       return true;
     }
     // Bloc code d'un scénario : $scenario->setData('nom', ...), getData, removeData, scenario::setData, dataStore::byTypeLinkIdKey('scenario', -1, 'nom')

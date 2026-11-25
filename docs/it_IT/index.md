@@ -114,7 +114,7 @@ Il plugin legge una sola volta l'intera installazione (oggetti, dispositivi, com
 
 | Controllo | Importanza | Cosa viene cercato | Correzione automatica |
 |---|---|---|---|
-| Variabili inutilizzate | Bassa | Variabili di scenario che nessuno scenario (blocchi di codice compresi), dispositivo, interazione, vista o design legge o scrive. Spesso sono residui di scenari eliminati. Compaiono anche quelle usate solo da un programma esterno (API) o da un plugin che conserva la propria configurazione. |  |
+| Variabili inutilizzate | Bassa | Variabili di scenario che nessuno scenario (blocchi di codice compresi), dispositivo, interazione, vista o design legge o scrive. Spesso sono residui di scenari eliminati. Compaiono anche quelle usate solo da un programma esterno (API) o da un plugin che conserva la propria configurazione. Il controllo copre gli usi che Jeedom mostra in Strumenti > Variabili e cerca inoltre nei blocchi di codice, nelle viste e nei design. |  |
 | Variabili di elementi eliminati | Bassa | Variabili collegate a uno scenario o a un dispositivo che non esiste più. | Sì |
 | Blocchi di scenari orfani | Bassa | Blocchi, sottoblocchi ed espressioni di scenari non più collegati ad alcuno scenario (residui di eliminazioni o copie interrotte). Occupano il database senza servire. |  |
 | Dimensione del database | Info | Le tabelle più voluminose del database di Jeedom. La cronologia ne rappresenta quasi sempre la parte principale. |  |
@@ -225,7 +225,8 @@ Esempio: uno scenario settimanale che le invia il riepilogo, o che la avvisa qua
 
 ## Limiti
 
-- Un comando usato solo in un **blocco codice** di uno scenario, tramite il suo nome (`cmd::byString('#[Soggiorno][Lampada][Stato]#')`), non viene riconosciuto: il dispositivo può apparire come orfano. Una variabile vi è riconosciuta se il suo nome completo compare tra virgolette (`getData('SL_cycle')`, o un array di nomi); se il suo nome è composto (`getData('SL_' . $nome)`), appare come inutilizzata.
+- Un comando usato solo in un **blocco codice** di uno scenario, tramite il suo nome (`cmd::byString('#[Soggiorno][Lampada][Stato]#')`), non viene riconosciuto: il dispositivo può apparire come orfano.
+- In un **blocco codice**, una variabile è riconosciuta se il suo nome completo compare tra virgolette (`getData('SL_cycle')`, o un array di nomi); se il suo nome è composto (`getData('SL_' . $nome)`), appare come inutilizzata. Al contrario, un nome tra virgolette che non è realmente usato (in un commento, ad esempio) conta come un uso.
 - Uno scenario avviato solo dall'**API**, da un programma esterno o dall'app mobile appare come « che non può mai avviarsi ». In tal caso ignori il controllo.
 - I plugin che memorizzano i loro collegamenti al di fuori della configurazione dei propri dispositivi o comandi non vengono rilevati.
 - « Dispositivo muto » si basa sulla data dell'ultimo valore ricevuto, che viene azzerata da un riavvio che svuota la cache.

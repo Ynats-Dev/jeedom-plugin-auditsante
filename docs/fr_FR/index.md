@@ -114,7 +114,7 @@ Le plugin lit une seule fois l'ensemble de l'installation (objets, équipements,
 
 | Contrôle | Importance | Ce qui est recherché | Correction auto |
 |---|---|---|---|
-| Variables inutilisées | Faible | Variables de scénario qu'aucun scénario (y compris les blocs code), équipement, interaction, vue ou design ne lit ni n'écrit. Ce sont souvent des restes de scénarios supprimés. Celles utilisées seulement par un programme externe (API) ou un plugin qui garde sa propre configuration apparaissent aussi. |  |
+| Variables inutilisées | Faible | Variables de scénario qu'aucun scénario (y compris les blocs code), équipement, interaction, vue ou design ne lit ni n'écrit. Ce sont souvent des restes de scénarios supprimés. Celles utilisées seulement par un programme externe (API) ou un plugin qui garde sa propre configuration apparaissent aussi. Le contrôle couvre les utilisations affichées par Jeedom dans Outils > Variables, et cherche en plus dans les blocs code, les vues et les designs. |  |
 | Variables d'éléments supprimés | Faible | Variables rattachées à un scénario ou un équipement qui n'existe plus. | Oui |
 | Blocs de scénarios orphelins | Faible | Blocs, sous-blocs et expressions de scénarios qui ne sont plus rattachés à aucun scénario (restes de suppressions ou de copies interrompues). Ils occupent la base sans servir. |  |
 | Taille de la base de données | Info | Les tables les plus volumineuses de la base Jeedom. L'historique en représente presque toujours l'essentiel. |  |
@@ -225,7 +225,8 @@ Exemple : un scénario hebdomadaire qui vous envoie le résumé, ou qui vous pr�
 
 ## Limites
 
-- Une commande utilisée seulement dans un **bloc code** d'un scénario, par son nom (`cmd::byString('#[Salon][Lampe][Etat]#')`), n'est pas reconnue : l'équipement peut apparaître comme orphelin. Une variable y est reconnue si son nom complet figure entre guillemets (`getData('SL_cycle')`, ou un tableau de noms) ; si son nom est assemblé (`getData('SL_' . $nom)`), elle apparaît comme inutilisée.
+- Une commande utilisée seulement dans un **bloc code** d'un scénario, par son nom (`cmd::byString('#[Salon][Lampe][Etat]#')`), n'est pas reconnue : l'équipement peut apparaître comme orphelin.
+- Dans un **bloc code**, une variable est reconnue si son nom complet figure entre guillemets (`getData('SL_cycle')`, ou un tableau de noms) ; si son nom est assemblé (`getData('SL_' . $nom)`), elle apparaît comme inutilisée. À l'inverse, un nom cité entre guillemets sans être réellement utilisé (dans un commentaire, par exemple) compte comme une utilisation.
 - Un scénario lancé uniquement par l'**API**, un programme externe ou l'application mobile apparaît comme « ne pouvant jamais se lancer ». Ignorez le contrôle dans ce cas.
 - Les plugins qui enregistrent leurs liens ailleurs que dans la configuration de leurs équipements ou commandes ne sont pas vus.
 - Les compteurs « équipement muet » reposent sur la date de dernière valeur reçue, remise à zéro par un redémarrage qui vide le cache.

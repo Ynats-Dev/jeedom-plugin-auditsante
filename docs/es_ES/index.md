@@ -114,7 +114,7 @@ El plugin lee una sola vez toda la instalación (objetos, equipos, comandos, esc
 
 | Comprobación | Importancia | Qué se busca | Corrección automática |
 |---|---|---|---|
-| Variables sin usar | Baja | Variables de escenario que ningún escenario (incluidos los bloques de código), equipo, interacción, vista o diseño lee ni escribe. Suelen ser restos de escenarios eliminados. Las usadas solo por un programa externo (API) o por un plugin que guarda su propia configuración también aparecen. |  |
+| Variables sin usar | Baja | Variables de escenario que ningún escenario (incluidos los bloques de código), equipo, interacción, vista o diseño lee ni escribe. Suelen ser restos de escenarios eliminados. Las usadas solo por un programa externo (API) o por un plugin que guarda su propia configuración también aparecen. El control cubre los usos que Jeedom muestra en Herramientas > Variables y busca además en los bloques de código, las vistas y los diseños. |  |
 | Variables de elementos eliminados | Baja | Variables vinculadas a un escenario o un equipo que ya no existe. | Sí |
 | Bloques de escenarios huérfanos | Baja | Bloques, subbloques y expresiones de escenarios que ya no están vinculados a ningún escenario (restos de eliminaciones o copias interrumpidas). Ocupan la base sin servir. |  |
 | Tamaño de la base de datos | Info | Las tablas más voluminosas de la base de Jeedom. El historial casi siempre representa la mayor parte. |  |
@@ -225,7 +225,8 @@ Ejemplo: un escenario semanal que le envía el resumen, o que le avisa cuando **
 
 ## Límites
 
-- Un comando usado solo en un **bloque código** de un escenario, por su nombre (`cmd::byString('#[Salón][Lámpara][Estado]#')`), no se reconoce: el equipo puede aparecer como huérfano. Una variable se reconoce ahí si su nombre completo figura entre comillas (`getData('SL_cycle')`, o un array de nombres); si su nombre se compone (`getData('SL_' . $nombre)`), aparece como sin usar.
+- Un comando usado solo en un **bloque código** de un escenario, por su nombre (`cmd::byString('#[Salón][Lámpara][Estado]#')`), no se reconoce: el equipo puede aparecer como huérfano.
+- En un **bloque código**, una variable se reconoce si su nombre completo figura entre comillas (`getData('SL_cycle')`, o un array de nombres); si su nombre se compone (`getData('SL_' . $nombre)`), aparece como sin usar. A la inversa, un nombre entre comillas que no se usa realmente (en un comentario, por ejemplo) cuenta como un uso.
 - Un escenario ejecutado solo por la **API**, un programa externo o la aplicación móvil aparece como « que nunca puede ejecutarse ». Ignore la comprobación en ese caso.
 - Los plugins que guardan sus vínculos fuera de la configuración de sus equipos o comandos no se detectan.
 - « Equipo mudo » se basa en la fecha del último valor recibido, que se reinicia con un reinicio que vacía la caché.
