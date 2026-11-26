@@ -107,7 +107,7 @@ Le plugin lit une seule fois l'ensemble de l'installation (objets, équipements,
 | Tâches planifiées en erreur | Moyenne | Les tâches du moteur de tâches (crons du core et des plugins) en erreur ne s'exécutent plus correctement. |  |
 | Tâches et écouteurs orphelins | Moyenne | Tâches planifiées et écouteurs (listeners) qui appellent une classe ou une fonction qui n'existe plus, en général celle d'un plugin supprimé. Ils tournent dans le vide et remplissent les logs d'erreurs. | Oui |
 | Plugins désactivés | Faible | Un plugin désactivé reste installé : il occupe de la place, apparaît dans le centre de mises à jour et ses équipements deviennent des fantômes. |  |
-| Plugins actifs sans équipement | Info | Plugins activés qui n'ont aucun équipement. Certains plugins fonctionnent sans équipement (outils, thèmes, passerelles) ; les autres sont peut-être inutiles. |  |
+| Plugins actifs sans équipement | Info | Plugins activés qui n'ont aucun équipement. Certains plugins fonctionnent sans équipement (outils, thèmes, passerelles) ; les autres sont peut-être inutiles. Les plugins qui ne gèrent pas d'équipement par nature (leur page n'affiche ni liste d'équipements ni bouton Ajouter : assistants, outils, thèmes) ne sont pas signalés, seul leur nombre est indiqué. |  |
 | Restes de plugins supprimés | Faible | Configuration et entrées du centre de mises à jour de plugins qui ne sont plus installés. Elles ne gênent pas le fonctionnement mais réapparaissent si le plugin est réinstallé. |  |
 
 ### Base de données et fichiers
@@ -151,6 +151,7 @@ Selon le contrôle, le détail propose :
 - un bouton de **correction automatique** (icône baguette magique) pour les seuls cas sans risque : supprimer ce que plus rien ne peut utiliser (commandes sans équipement, historique de commandes supprimées, logs de scénarios supprimés, tâches et écouteurs d'un plugin supprimé, variables d'éléments supprimés). Une fenêtre explique ce qui va être supprimé avant toute action. Faites une sauvegarde avant ;
 - **Revérifier**, pour relancer uniquement ce contrôle après une correction manuelle ;
 - **Ignorer**, si la situation est voulue (un équipement de secours gardé désactivé, un scénario lancé par l'API...). Le contrôle sort de la note et reste visible dans le filtre **Ignorés**. Choisissez une durée (7 jours, 30 jours, 3 mois, 1 an ou sans limite) : à son terme, le contrôle revient dans la note et un message Jeedom vous prévient. Vous pouvez noter la raison ;
+- **Exclure un élément** (icône œil barré à droite de son nom, pour les variables inutilisées), quand vous savez qu'il sert alors que l'audit ne le voit pas (variable lue par un programme externe, nom construit d'une façon que l'audit ne reconnaît pas). Le contrôle est revérifié aussitôt : l'élément sort de la liste et du décompte, et passe dans la liste **Exclus de l'audit**, d'où un clic le réintègre. Contrairement à **Ignorer**, le reste du contrôle continue de compter dans la note ;
 - **Commenter**, pour garder une note sur le contrôle.
 
 Le plugin ne supprime jamais un scénario, un équipement ou une commande qui a encore un équipement : ces décisions vous reviennent.
@@ -182,6 +183,12 @@ Dans les contrôles de références cassées, de commandes sans équipement et d
 
 Par défaut, Jeedom ne garde ses sauvegardes que quelques jours sur la box. Si vous en copiez ailleurs (partage NAS, dossier synchronisé avec le cloud), montez ce dossier sur la box et ajoutez-le dans **Dossiers de sauvegardes supplémentaires** (configuration du plugin). Les partages réseau montés et les dossiers qui contiennent des sauvegardes y sont proposés en un clic. Le bouton **Tester** vérifie que Jeedom peut lire le dossier, compte ses sauvegardes et contrôle que la plus récente contient bien la base de Jeedom (`DB_backup.sql`). Seuls les fichiers `.tar.gz` placés directement dans le dossier sont pris en compte. Les sauvegardes sont lues une fois, la nuit suivante, depuis la page du plugin, ou tout de suite avec **Lire les sauvegardes maintenant**, qui enregistre aussi la liste des dossiers. Une même sauvegarde présente à deux endroits n'est lue qu'une fois ; la date est prise dans le nom du fichier, plus fiable que la date d'une copie.
 
+### Envoyer une sauvegarde depuis l'ordinateur
+
+Si vos anciennes sauvegardes sont sur votre ordinateur, **Envoyer une sauvegarde** (configuration du plugin) permet de les lire sans donner à la box l'accès à un dossier. Choisissez un ou plusieurs fichiers `.tar.gz`, `.tgz`, `.tar` ou `.zip` (le zip peut contenir la sauvegarde `.tar.gz`). Chaque fichier est envoyé par morceaux, sans dépendre de la limite de taille de PHP. Le plugin vérifie qu'il contient la base de Jeedom, puis le lit en tâche de fond et le supprime. Rien n'est restauré. L'espace libre nécessaire est contrôlé avant l'envoi.
+
+La date est celle du nom du fichier, sinon celle de la base dans l'archive, sinon celle du fichier sur l'ordinateur. Une sauvegarde déjà lue, ou postérieure au premier relevé du plugin, est refusée car elle n'apporterait rien.
+
 ## Où sont stockées les données
 
 Toutes les données du plugin sont des fichiers JSON dans `plugins/auditsante/data/`, indépendants de la base Jeedom :
@@ -190,8 +197,10 @@ Toutes les données du plugin sont des fichiers JSON dans `plugins/auditsante/da
 |---|---|
 | `report.json` | dernier rapport d'audit |
 | `ignored.json`, `comments.json` | contrôles ignorés et commentaires |
+| `excluded.json` | éléments exclus d'un contrôle (variables) |
 | `names.json` | archive des noms (un élément par entrée : nom, dates de présence et de suppression) |
 | `archive-state.json` | sauvegardes déjà lues, dates des relevés, avancement de la lecture en cours |
+| `tmp/` | sauvegardes envoyées depuis l'ordinateur, le temps de les lire (exclues des sauvegardes Jeedom) |
 
 Le dossier est conservé lors des mises à jour du plugin, inclus dans les sauvegardes Jeedom et supprimé avec le plugin. Il est protégé contre la lecture depuis le web. Les écritures sont atomiques : une coupure de courant pendant une écriture laisse l'ancien fichier intact. Seuls les réglages de la page de configuration restent dans la configuration Jeedom.
 
@@ -222,11 +231,12 @@ Exemple : un scénario hebdomadaire qui vous envoie le résumé, ou qui vous pr�
 - **Prévenir des nouveaux problèmes** : ajoute un message dans le centre de messages quand un contrôle qui ne signalait rien signale un problème.
 - **Seuils** : délai après lequel un scénario qui ne se lance plus est signalé (180 jours), délai après lequel un équipement muet est signalé (30 jours), taille d'un log volumineux (20 Mo), nombre de messages au-delà duquel le centre de messages est encombré (50).
 - **Dossiers de sauvegardes supplémentaires** : voir « Remonter plus loin dans le temps ».
+- **Envoyer une sauvegarde** : voir « Envoyer une sauvegarde depuis l'ordinateur ».
 
 ## Limites
 
 - Une commande utilisée seulement dans un **bloc code** d'un scénario, par son nom (`cmd::byString('#[Salon][Lampe][Etat]#')`), n'est pas reconnue : l'équipement peut apparaître comme orphelin.
-- Dans un **bloc code**, une variable est reconnue si son nom complet figure entre guillemets (`getData('SL_cycle')`, ou un tableau de noms) ; si son nom est assemblé (`getData('SL_' . $nom)`), elle apparaît comme inutilisée. À l'inverse, un nom cité entre guillemets sans être réellement utilisé (dans un commentaire, par exemple) compte comme une utilisation.
+- Dans un **bloc code**, une variable est reconnue si son nom complet figure entre guillemets (`getData('SL_cycle')`, ou un tableau de noms) ; si son nom est assemblé (`getData('SL_' . $nom)`, `"SL_{$nom}"`, `sprintf('SL_%s', $nom)`, ou `variable(SL_#trigger_name#)` dans une action), toute variable qui commence ou finit par le morceau fixe (`SL_` ici, au moins 3 caractères) est considérée comme utilisée, et seul leur nombre est indiqué dans le résultat. À l'inverse, un nom cité entre guillemets sans être réellement utilisé (dans un commentaire, par exemple) compte comme une utilisation.
 - Un scénario lancé uniquement par l'**API**, un programme externe ou l'application mobile apparaît comme « ne pouvant jamais se lancer ». Ignorez le contrôle dans ce cas.
 - Les plugins qui enregistrent leurs liens ailleurs que dans la configuration de leurs équipements ou commandes ne sont pas vus.
 - Les compteurs « équipement muet » reposent sur la date de dernière valeur reçue, remise à zéro par un redémarrage qui vide le cache.

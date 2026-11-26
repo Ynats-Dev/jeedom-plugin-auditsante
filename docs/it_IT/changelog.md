@@ -15,3 +15,4 @@ lang: it_IT
 - Dati del plugin in file JSON (`data/`), indipendenti dal database di Jeedom.
 - Punteggio, lettera, controlli ignorati per una durata, commenti, rapporto di diagnostica, dispositivo utilizzabile negli scenari.
 - Interfaccia e documentazione illustrata in francese, inglese, tedesco, spagnolo e italiano.
+- Invio di un backup dal computer (.tar.gz, .tgz, .tar o .zip), senza dare accesso a una cartella.

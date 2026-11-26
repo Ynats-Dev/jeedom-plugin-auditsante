@@ -15,3 +15,4 @@ lang: fr_FR
 - Données du plugin en fichiers JSON (`data/`), indépendantes de la base Jeedom.
 - Note, lettre, contrôles ignorés pour une durée, commentaires, rapport de diagnostic, équipement utilisable dans les scénarios.
 - Interface et documentation illustrée en français, anglais, allemand, espagnol et italien.
+- Envoi d'une sauvegarde depuis l'ordinateur (.tar.gz, .tgz, .tar ou .zip), sans donner accès à un dossier.

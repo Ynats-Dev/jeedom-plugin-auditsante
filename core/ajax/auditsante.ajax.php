@@ -74,6 +74,24 @@ try {
     ajax::success(auditsanteRecovery::readBackupDirs(init('dirs')));
   }
 
+  // Configuration : envoi d'une sauvegarde depuis le navigateur, par morceaux
+  if (init('action') == 'uploadStart') {
+    ajax::success(auditsanteUpload::start(init('name'), init('size'), init('modified')));
+  }
+
+  if (init('action') == 'uploadChunk') {
+    ajax::success(auditsanteUpload::chunk(init('id'), init('offset'), isset($_FILES['chunk']) ? $_FILES['chunk'] : null));
+  }
+
+  if (init('action') == 'uploadFinish') {
+    @set_time_limit(120);
+    ajax::success(auditsanteUpload::finish(init('id')));
+  }
+
+  if (init('action') == 'uploadCancel') {
+    ajax::success(auditsanteUpload::cancel(init('id')));
+  }
+
   // Applique la correction automatique d'un contrôle
   if (init('action') == 'applyFix') {
     @set_time_limit(300);
@@ -89,6 +107,11 @@ try {
   if (init('action') == 'setIgnored') {
     $comment = isset($_POST['comment']) ? init('comment') : null;
     ajax::success(auditsante::getFullReport(auditsante::setIgnored(init('id'), init('ignored') == 1, init('days', 0), $comment, $login)));
+  }
+
+  // Exclut un élément d'un contrôle (il sert, l'audit ne le voit pas) ou le réintègre, puis revérifie le contrôle
+  if (init('action') == 'setExcluded') {
+    ajax::success(auditsante::getFullReport(auditsante::setExcluded(init('id'), init('key'), init('excluded') == 1, $login)));
   }
 
   // Commentaire d'un contrôle (texte vide = suppression)

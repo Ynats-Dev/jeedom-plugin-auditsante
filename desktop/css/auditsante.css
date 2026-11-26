@@ -780,6 +780,45 @@ a.auditsante-item:hover .auditsante-item-open {
   grid-template-columns: 1fr 1fr;
   gap: 18px;
 }
+/* Élément qu'on peut exclure de l'audit : la ligne (lien) et son bouton côte à côte */
+.auditsante-item-row {
+  display: flex;
+  align-items: stretch;
+}
+.auditsante-item-row > .auditsante-item {
+  flex: 1;
+  min-width: 0;
+}
+.auditsante-item-exclude {
+  flex: 0 0 auto;
+  width: 38px;
+  border: 0;
+  border-left: 1px solid var(--auditsante-border);
+  background: transparent;
+  color: var(--auditsante-muted);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.18s var(--auditsante-ease), color 0.18s var(--auditsante-ease);
+}
+.auditsante-item-exclude:hover,
+.auditsante-item-exclude:focus-visible {
+  background: var(--auditsante-surface-strong);
+  color: var(--auditsante-accent);
+}
+.auditsante-excluded h4 {
+  margin: 0 0 6px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--auditsante-muted);
+}
+.auditsante-excluded h4 i {
+  margin-right: 4px;
+}
+.auditsante-excluded .auditsante-items {
+  max-height: 220px;
+}
 .auditsante-explain h4 {
   margin: 0 0 4px !important;
   font-size: 12px !important;

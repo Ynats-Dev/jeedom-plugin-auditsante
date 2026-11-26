@@ -107,7 +107,25 @@ if (!isConnect('admin')) {
         <div class="help-block">{{Chemins sur la box, lisibles par Jeedom. Seuls les fichiers .tar.gz placés directement dans le dossier sont lus, une seule fois, la nuit ou tout de suite depuis la page du plugin. Pensez à sauvegarder la configuration après un ajout.}}</div>
       </div>
     </div>
+    <div class="form-group">
+      <label class="col-md-4 control-label">{{Envoyer une sauvegarde}}
+        <sup><i class="fas fa-question-circle tooltips" title="{{Pour lire une ancienne sauvegarde conservée sur votre ordinateur, sans donner à la box l'accès à un dossier. Le fichier est lu en tâche de fond puis supprimé de la box. Il n'est jamais restauré.}}"></i></sup>
+      </label>
+      <div class="col-md-6">
+        <input type="file" id="sa_uploadInput" accept=".gz,.tgz,.tar,.zip" multiple style="display:none;">
+        <div class="sa-dirs-actions">
+          <a class="btn btn-sm btn-default" id="bt_saUpload"><i class="fas fa-upload"></i> {{Choisir des fichiers}}</a>
+          <a class="btn btn-sm btn-danger" id="bt_saUploadCancel" style="display:none;"><i class="fas fa-times"></i> {{Annuler l'envoi}}</a>
+        </div>
+        <div id="sa_uploads"></div>
+        <div class="help-block">{{Sauvegardes Jeedom au format .tar.gz, .tgz, .tar ou .zip. Restez sur cette page pendant l'envoi ; la lecture, elle, continue en tâche de fond.}}</div>
+      </div>
+    </div>
     <style>
+      .sa-upload { margin: 4px 0 6px; padding: 6px 10px; border-left: 3px solid #999; font-size: 12px; overflow-wrap: anywhere; }
+      .sa-upload.is-success { border-color: #30a46c; }
+      .sa-upload.is-warning { border-color: #f5a524; }
+      .sa-upload.is-danger { border-color: #e5484d; }
       #sa_backupDirs .sa-dir { margin-bottom: 6px; }
       #sa_backupDirs .sa-dir-result, #sa_backupJob { margin: 4px 0 0; padding: 6px 10px; border-left: 3px solid #999; font-size: 12px; }
       #sa_backupDirs .sa-dir-result.is-success, #sa_backupJob.is-success { border-color: #30a46c; }
@@ -149,7 +167,14 @@ if (!isConnect('admin')) {
             'done' => __('Lecture terminée :', __FILE__),
             'stillUnknown' => __('élément(s) supprimé(s) toujours sans nom.', __FILE__),
             'failed' => __('La lecture a échoué :', __FILE__),
-            'background' => __('Elle continue si vous quittez la page.', __FILE__)
+            'background' => __('Elle continue si vous quittez la page.', __FILE__),
+            'uploadSending' => __('Envoi en cours :', __FILE__),
+            'uploadChecking' => __('Vérification de l\'archive...', __FILE__),
+            'uploadWaiting' => __('En attente', __FILE__),
+            'uploadCancelled' => __('Envoi annulé.', __FILE__),
+            'uploadPending' => __('Sauvegarde reçue, elle va être lue. Date retenue :', __FILE__),
+            'uploadKnown' => __('Cette sauvegarde a déjà été lue par le plugin.', __FILE__),
+            'uploadUseless' => __('Sauvegarde postérieure au premier relevé des noms, elle n\'apporterait rien. Date retenue :', __FILE__)
           ), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;
         var AJAX_URL = 'plugins/auditsante/core/ajax/auditsante.ajax.php'
         var list = document.getElementById('sa_backupDirs')
@@ -329,6 +354,11 @@ if (!isConnect('admin')) {
             }, 3000)
             return
           }
+          if (waitingRead) {
+            waitingRead = false
+            readUploads()
+            return
+          }
           if (_job.status == 'error') {
             jobBox.className = 'sa-dir-result is-danger'
             jobBox.innerHTML = '<i class="fas fa-times"></i> ' + T.failed + ' ' + esc(_job.message)
@@ -372,6 +402,123 @@ if (!isConnect('admin')) {
 
         readButton.addEventListener('click', function () {
           if (!readButton.classList.contains('disabled')) readBackups()
+        })
+
+        /* ------------- Envoi de sauvegardes depuis le navigateur ------------- */
+        var uploadInput = document.getElementById('sa_uploadInput')
+        var uploadButton = document.getElementById('bt_saUpload')
+        var uploadCancel = document.getElementById('bt_saUploadCancel')
+        var uploads = document.getElementById('sa_uploads')
+        var cancelled = false
+        var waitingRead = false // Sauvegardes reçues pendant une lecture : lues à la suite
+
+        function uploadRow(_box, _level, _icon, _name, _text) {
+          _box.className = 'sa-upload' + (_level ? ' is-' + _level : '')
+          _box.innerHTML = '<i class="' + _icon + '"></i> <b>' + esc(_name) + '</b><br>' + esc(_text)
+        }
+
+        /** Envoie un fichier par morceaux. _done(true) si la sauvegarde est à lire. */
+        function sendFile(_file, _box, _done) {
+          var fail = function (_error) {
+            uploadRow(_box, 'danger', 'fas fa-times', _file.name, _error || T.commError)
+            _done(false)
+          }
+          uploadRow(_box, '', 'fas fa-spinner fa-spin', _file.name, T.uploadSending + ' 0 %')
+          call('uploadStart', { name: _file.name, size: _file.size, modified: _file.lastModified || 0 }, function (_start, _error) {
+            if (!_start) return fail(_error)
+            var errors = 0
+            var abort = function (_message) {
+              call('uploadCancel', { id: _start.id }, function () {})
+              fail(_message)
+            }
+            var next = function (_offset) {
+              if (cancelled || !document.body.contains(uploads)) return abort(T.uploadCancelled)
+              if (_offset >= _file.size) {
+                uploadRow(_box, '', 'fas fa-spinner fa-spin', _file.name, T.uploadChecking)
+                call('uploadFinish', { id: _start.id }, function (_result, _finishError) {
+                  if (!_result) return fail(_finishError)
+                  if (_result.status == 'pending') {
+                    uploadRow(_box, 'success', 'fas fa-check', _file.name, T.uploadPending + ' ' + _result.date)
+                  } else if (_result.status == 'known') {
+                    uploadRow(_box, 'warning', 'fas fa-info-circle', _file.name, T.uploadKnown)
+                  } else {
+                    uploadRow(_box, 'warning', 'fas fa-info-circle', _file.name, T.uploadUseless + ' ' + _result.date)
+                  }
+                  _done(_result.status == 'pending')
+                })
+                return
+              }
+              call('uploadChunk', { id: _start.id, offset: _offset, chunk: _file.slice(_offset, _offset + _start.chunk) }, function (_result, _chunkError) {
+                if (!_result) {
+                  // Coupure passagère : deux nouvelles tentatives ; le serveur indique où reprendre
+                  if (++errors > 2) return abort(_chunkError)
+                  setTimeout(function () { next(_offset) }, 2000)
+                  return
+                }
+                errors = 0
+                uploadRow(_box, '', 'fas fa-spinner fa-spin', _file.name, T.uploadSending + ' ' + Math.floor(_result.received * 100 / _file.size) + ' %')
+                next(_result.received)
+              })
+            }
+            next(0)
+          })
+        }
+
+        /** Lance la lecture des sauvegardes reçues, ou la programme après celle en cours. */
+        function readUploads() {
+          call('recoverJob', {}, function (_job) {
+            if (_job && (_job.status == 'running' || _job.status == 'auditing')) {
+              waitingRead = true
+              showJob(_job)
+              return
+            }
+            call('recoverStart', {}, function (_started, _error) {
+              if (_started) return showJob(_started)
+              jobBox.style.display = ''
+              jobBox.className = 'sa-dir-result is-danger'
+              jobBox.innerHTML = '<i class="fas fa-times"></i> ' + esc(_error || T.commError)
+            })
+          })
+        }
+
+        uploadButton.addEventListener('click', function () {
+          if (!uploadButton.classList.contains('disabled')) uploadInput.click()
+        })
+        uploadCancel.addEventListener('click', function () { cancelled = true })
+        uploadInput.addEventListener('change', function (event) {
+          // Champ hors configuration : le core ne doit pas y voir une modification à sauvegarder
+          event.stopPropagation()
+          var files = Array.prototype.slice.call(uploadInput.files)
+          uploadInput.value = ''
+          if (!files.length) return
+          cancelled = false
+          uploads.innerHTML = ''
+          uploadButton.classList.add('disabled')
+          uploadCancel.style.display = ''
+          var boxes = files.map(function (file) {
+            var box = document.createElement('div')
+            uploads.appendChild(box)
+            uploadRow(box, '', 'far fa-clock', file.name, T.uploadWaiting)
+            return box
+          })
+          var toRead = 0
+          var step = function (_index) {
+            if (_index >= files.length) {
+              uploadButton.classList.remove('disabled')
+              uploadCancel.style.display = 'none'
+              if (toRead > 0) readUploads()
+              return
+            }
+            if (cancelled) {
+              uploadRow(boxes[_index], 'warning', 'fas fa-times', files[_index].name, T.uploadCancelled)
+              return step(_index + 1)
+            }
+            sendFile(files[_index], boxes[_index], function (_pending) {
+              if (_pending) toRead++
+              step(_index + 1)
+            })
+          }
+          step(0)
         })
 
         // Lecture déjà en cours (lancée depuis la page du plugin ou la nuit) : on l'affiche

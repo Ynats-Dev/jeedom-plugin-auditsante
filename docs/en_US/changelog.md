@@ -15,3 +15,4 @@ lang: en_US
 - Plugin data stored in JSON files (`data/`), independent of the Jeedom database.
 - Score, grade, checks ignored for a set time, comments, diagnostic report, device usable in scenarios.
 - Interface and illustrated documentation in French, English, German, Spanish and Italian.
+- Backup upload from the computer (.tar.gz, .tgz, .tar or .zip), without giving access to a folder.

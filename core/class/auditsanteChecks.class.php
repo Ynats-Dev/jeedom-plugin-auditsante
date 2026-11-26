@@ -376,8 +376,10 @@ class auditsanteChecks {
         'severity' => 'low',
         'title' => __('Variables inutilisées', __FILE__),
         'description' => __('Variables de scénario qu\'aucun scénario (y compris les blocs code), équipement, interaction, vue ou design ne lit ni n\'écrit. Ce sont souvent des restes de scénarios supprimés. Celles utilisées seulement par un programme externe (API) ou un plugin qui garde sa propre configuration apparaissent aussi.', __FILE__),
-        'recommendation' => __('Supprimez-les depuis Outils > Variables (bouton « Supprimer » ou action remove_variable).', __FILE__),
+        'recommendation' => __('Supprimez-les depuis Outils > Variables (bouton « Supprimer » ou action remove_variable). Si une variable sert sans que l\'audit le voie (programme externe, nom construit autrement), excluez-la de l\'audit avec le bouton à droite de son nom.', __FILE__),
         'fix' => array('type' => 'link', 'label' => __('Variables', __FILE__), 'url' => 'index.php?v=d&modal=dataStore.management&type=scenario'),
+        // Éléments que l'utilisateur peut exclure un par un (data/excluded.json)
+        'exclude' => true,
       ),
       'datastore_orphan' => array(
         'category' => 'data',
@@ -1488,16 +1490,42 @@ class auditsanteChecks {
       $counts[$eqLogic['eqType_name']] = true;
     }
     $items = array();
+    $tools = 0;
     foreach (auditsanteIndex::plugins() as $id => $info) {
       if (!$info['active'] || isset($counts[$id])) {
         continue;
       }
+      if (!self::pluginHasEquipments($id)) {
+        $tools++;
+        continue;
+      }
       $items[] = self::item($info['name'] . ' (' . $id . ')', 'index.php?v=d&p=plugin&id=' . urlencode($id));
     }
+    $toolsDetail = ($tools > 0) ? ' ' . sprintf(__('%d plugin(s) qui ne gèrent pas d\'équipement (outils, thèmes) ne sont pas comptés.', __FILE__), $tools) : '';
     if (count($items) == 0) {
-      return self::pass(__('Tous les plugins actifs ont au moins un équipement.', __FILE__));
+      return self::pass(__('Tous les plugins actifs ont au moins un équipement.', __FILE__) . $toolsDetail);
     }
-    return self::info(sprintf(__('%d plugin(s) actif(s) sans équipement.', __FILE__), count($items)), $items);
+    return self::info(sprintf(__('%d plugin(s) actif(s) sans équipement.', __FILE__), count($items)) . $toolsDetail, $items);
+  }
+
+  /**
+   * Un plugin gère des équipements si sa page de configuration affiche la grille des équipements
+   * (eqLogicThumbnailContainer) ou un bouton d'ajout (data-action="add"). Les plugins outils (assistants, thèmes,
+   * tableaux de bord) n'ont ni l'un ni l'autre, ou pas de page du tout. Page illisible : on suppose que oui.
+   */
+  private static function pluginHasEquipments($_id) {
+    if (class_exists($_id) && !is_subclass_of($_id, 'eqLogic')) {
+      return false;
+    }
+    $file = auditsanteTools::jeedomRoot() . '/plugins/' . $_id . '/desktop/php/' . $_id . '.php';
+    if (!file_exists($file)) {
+      return false;
+    }
+    $page = @file_get_contents($file);
+    if ($page === false) {
+      return true;
+    }
+    return stripos($page, 'eqLogicThumbnailContainer') !== false || preg_match('/data-action\s*=\s*["\']add["\']/i', $page) === 1;
   }
 
   private static function check_plugin_leftovers() {
@@ -1538,27 +1566,138 @@ class auditsanteChecks {
     }
     // Guillemet tel qu'il peut être stocké : brut, échappé en JSON (\" , \\\"), ou en entité HTML (&quot; &#39;)
     $quote = '(?:\\\\*["\']|&quot;|&#0?34;|&#0?39;|&apos;)';
+    $dynamic = self::dynamicVariableNames($code, $corpus . $content['variableOptions'], $quote);
+    $excludedKeys = self::excludedKeys('variables_unused');
+    $excluded = array();
     $items = array();
     $total = 0;
+    $built = 0;
     foreach (self::query("SELECT id, `key`, `value` FROM dataStore WHERE type = 'scenario' AND link_id = -1") as $row) {
       $total++;
       $name = (string) $row['key'];
       if ($name === '') {
         continue;
       }
+      if (isset($excludedKeys[$name])) {
+        $excluded[] = $name;
+        continue;
+      }
       if (self::variableUsed($name, $corpus, $code, $content['variableOptions'], $quote)) {
+        continue;
+      }
+      if (self::matchesDynamicName($name, $dynamic)) {
+        $built++;
         continue;
       }
       $value = (string) $row['value'];
       if (function_exists('mb_strlen') ? mb_strlen($value) > 40 : strlen($value) > 40) {
         $value = (function_exists('mb_substr') ? mb_substr($value, 0, 40) : substr($value, 0, 40)) . '...';
       }
-      $items[] = self::item($name . ' = ' . $value, 'index.php?v=d&modal=dataStore.management&type=scenario');
+      $item = self::item($name . ' = ' . $value, 'index.php?v=d&modal=dataStore.management&type=scenario');
+      $item['exclude'] = $name;
+      $items[] = $item;
     }
+    $detail = ($built > 0) ? ' ' . sprintf(__('%d variable(s) dont le nom est construit dans un bloc code ou avec un tag sont considérées comme utilisées.', __FILE__), $built) : '';
+    if (count($excluded) > 0) {
+      $detail .= ' ' . sprintf(__('%d variable(s) exclue(s) de l\'audit.', __FILE__), count($excluded));
+    }
+    sort($excluded, SORT_NATURAL | SORT_FLAG_CASE);
     if (count($items) == 0) {
-      return self::pass(sprintf(__('Les %d variable(s) sont utilisées.', __FILE__), $total));
+      return self::result('pass', sprintf(__('Les %d variable(s) sont utilisées.', __FILE__), $total) . $detail, array(), array('excluded' => $excluded));
     }
-    return self::warn(sprintf(__('%d variable(s) sur %d utilisée(s) nulle part.', __FILE__), count($items), $total), $items);
+    return self::result('warn', sprintf(__('%d variable(s) sur %d utilisée(s) nulle part.', __FILE__), count($items), $total) . $detail, $items, array('excluded' => $excluded));
+  }
+
+  /** Éléments exclus d'un contrôle par l'utilisateur (data/excluded.json) : {clé => {since, by}}. */
+  public static function excludedKeys($_id) {
+    $excluded = auditsanteStore::read('excluded');
+    return (isset($excluded[$_id]) && is_array($excluded[$_id])) ? $excluded[$_id] : array();
+  }
+
+  /**
+   * Morceaux de noms de variables construits dynamiquement : dans le code libre, texte entre guillemets collé à une
+   * concaténation ('tps_' . $eq, $eq . '_jour', 'a' + x en JS), à une interpolation ("tps_{$eq}_jour", `x_${i}`)
+   * ou à un format sprintf ('tps_%s_jour') ; dans les expressions, variable(tps_#tag#) ou "name":"tps_#tag#".
+   * Retourne {prefixes: [], suffixes: [], regex: []}.
+   */
+  private static function dynamicVariableNames($_code, $_corpus, $_quote) {
+    $prefixes = array();
+    $suffixes = array();
+    $regex = array();
+    $literal = '(["\'])((?:(?!\1)[^\\\\\n]|\\\\.){1,100})\1';
+    if ($_code !== '') {
+      if (preg_match_all('/' . $literal . '\s*[.+](?![.\d=+])/', $_code, $matches)) {
+        $prefixes = array_merge($prefixes, $matches[2]);
+      }
+      if (preg_match_all('/(?:[.+]=?)(?<![.+][.+])\s*' . $literal . '/', $_code, $matches)) {
+        $suffixes = array_merge($suffixes, $matches[2]);
+      }
+      // Interpolation et formats : le texte avant le premier morceau variable, et après le dernier
+      // (entre apostrophes, PHP n'interpole pas : seuls les formats sprintf comptent)
+      if (preg_match_all('/(["\'`])((?:(?!\1)[^\\\\\n]|\\\\.){1,100})\1/', $_code, $matches, PREG_SET_ORDER)) {
+        foreach ($matches as $match) {
+          $text = $match[2];
+          $format = '%(?:\d+\$)?[sd]';
+          $parts = preg_split('/' . ($match[1] == "'" ? $format : '\{?\$\{?[A-Za-z_][\w\[\]\'"\->]*\}?|' . $format) . '/', $text);
+          if (count($parts) > 1) {
+            $prefixes[] = $parts[0];
+            $suffixes[] = end($parts);
+          }
+        }
+      }
+      foreach ($prefixes as $text) {
+        $parts = preg_split('/%(?:\d+\$)?[sd]/', $text);
+        if (count($parts) > 1) {
+          $suffixes[] = end($parts);
+        }
+      }
+    }
+    // Tags Jeedom dans le nom : variable(tps_#trigger_name#) ou action variable dont le nom contient un tag
+    if (preg_match_all('/variable\s*\(\s*' . $_quote . '?([^,()"\']*#[^,()"\']*?)' . $_quote . '?\s*[,)]/i', $_corpus, $m1)
+      | preg_match_all('/' . $_quote . '(?:name|variable)' . $_quote . '\s*:\s*' . $_quote . '([^"\'\\\\&]*#[^"\'\\\\&]*)' . $_quote . '/i', $_corpus, $m2)) {
+      foreach (array_merge(isset($m1[1]) ? $m1[1] : array(), isset($m2[1]) ? $m2[1] : array()) as $text) {
+        $parts = preg_split('/#[^#]+#/', trim($text));
+        if (count($parts) < 2) {
+          continue;
+        }
+        $regex[] = '/^' . implode('.+', array_map(function ($_part) {
+          return preg_quote($_part, '/');
+        }, $parts)) . '$/i';
+      }
+    }
+    // Un morceau trop court ou sans lettre (« _ », « - », « 1 ») rapprocherait n'importe quel nom
+    $keep = function ($_list) {
+      $return = array();
+      foreach ($_list as $text) {
+        $text = stripslashes($text);
+        if (strlen($text) >= 3 && preg_match('/[a-z]/i', $text)) {
+          $return[strtolower($text)] = true;
+        }
+      }
+      return array_keys($return);
+    };
+    return array('prefixes' => $keep($prefixes), 'suffixes' => $keep($suffixes), 'regex' => array_unique($regex));
+  }
+
+  private static function matchesDynamicName($_name, $_dynamic) {
+    $name = strtolower($_name);
+    $length = strlen($name);
+    foreach ($_dynamic['prefixes'] as $prefix) {
+      if ($length > strlen($prefix) && strpos($name, $prefix) === 0) {
+        return true;
+      }
+    }
+    foreach ($_dynamic['suffixes'] as $suffix) {
+      if ($length > strlen($suffix) && substr($name, -strlen($suffix)) === $suffix) {
+        return true;
+      }
+    }
+    foreach ($_dynamic['regex'] as $regex) {
+      if (preg_match($regex, $_name)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /**

@@ -107,7 +107,7 @@ Das Plugin liest die gesamte Installation einmal (Objekte, Geräte, Befehle, Sze
 | Fehlerhafte geplante Aufgaben | Mittel | Fehlerhafte Aufgaben der Aufgaben-Engine (Crons des Cores und der Plugins) werden nicht mehr korrekt ausgeführt. |  |
 | Verwaiste Aufgaben und Listener | Mittel | Geplante Aufgaben und Listener, die eine Klasse oder Funktion aufrufen, die nicht mehr existiert, meist die eines entfernten Plugins. Sie laufen ins Leere und füllen die Logs mit Fehlern. | Ja |
 | Deaktivierte Plugins | Niedrig | Ein deaktiviertes Plugin bleibt installiert: Es belegt Platz, erscheint im Update-Center und seine Geräte werden zu Geistern. |  |
-| Aktive Plugins ohne Geräte | Info | Aktivierte Plugins ohne jedes Gerät. Manche Plugins funktionieren ohne Geräte (Werkzeuge, Themes, Gateways); die anderen sind vielleicht unnötig. |  |
+| Aktive Plugins ohne Geräte | Info | Aktivierte Plugins ohne jedes Gerät. Manche Plugins funktionieren ohne Geräte (Werkzeuge, Themes, Gateways); die anderen sind vielleicht unnötig. Plugins, die von Natur aus keine Geräte verwalten (ihre Seite zeigt weder eine Geräteliste noch eine Schaltfläche Hinzufügen: Assistenten, Werkzeuge, Themes), werden nicht gemeldet; nur ihre Anzahl wird angegeben. |  |
 | Reste entfernter Plugins | Niedrig | Konfiguration und Einträge im Update-Center von Plugins, die nicht mehr installiert sind. Sie stören den Betrieb nicht, erscheinen aber wieder, wenn das Plugin neu installiert wird. |  |
 
 ### Datenbank und Dateien
@@ -151,6 +151,7 @@ Je nach Prüfung bietet das Detail:
 - eine Schaltfläche zur **automatischen Korrektur** (Zauberstab-Symbol) nur für risikofreie Fälle: Löschen dessen, was nichts mehr verwenden kann (Befehle ohne Gerät, Verlauf gelöschter Befehle, Logs gelöschter Szenarien, Aufgaben und Listener eines entfernten Plugins, Variablen gelöschter Elemente). Ein Fenster erklärt vor jeder Aktion, was gelöscht wird. Erstellen Sie vorher eine Sicherung;
 - **Erneut prüfen**, um nach einer manuellen Korrektur nur diese Prüfung erneut auszuführen;
 - **Ignorieren**, wenn die Situation gewollt ist (ein bewusst deaktiviert gelassenes Ersatzgerät, ein von der API gestartetes Szenario...). Die Prüfung zählt nicht mehr in der Bewertung und bleibt im Filter **Ignoriert** sichtbar. Wählen Sie eine Dauer (7 Tage, 30 Tage, 3 Monate, 1 Jahr oder unbegrenzt): Danach zählt die Prüfung wieder und eine Jeedom-Nachricht weist Sie darauf hin. Sie können den Grund notieren;
+- **Ein Element ausschließen** (Symbol durchgestrichenes Auge rechts neben seinem Namen, für unbenutzte Variablen), wenn Sie wissen, dass es verwendet wird, die Prüfung es aber nicht erkennt (Variable, die ein externes Programm liest, Name, der auf eine von der Prüfung nicht erkannte Weise gebildet wird). Die Prüfung wird sofort erneut ausgeführt: Das Element verlässt die Liste und die Zählung und erscheint in der Liste **Von der Prüfung ausgeschlossen**, wo ein Klick es wieder aufnimmt. Anders als bei **Ignorieren** zählt der Rest der Prüfung weiter in der Bewertung;
 - **Kommentieren**, um eine Notiz zur Prüfung zu behalten.
 
 Das Plugin löscht nie ein Szenario, ein Gerät oder einen Befehl, der noch ein Gerät hat: Diese Entscheidungen liegen bei Ihnen.
@@ -182,6 +183,12 @@ In den Prüfungen zu defekten Verweisen, Befehlen ohne Gerät und verwaistem Ver
 
 Standardmäßig behält Jeedom seine Sicherungen nur wenige Tage auf der Box. Wenn Sie sie anderswo hin kopieren (NAS-Freigabe, mit der Cloud synchronisierter Ordner), binden Sie diesen Ordner auf der Box ein und fügen Sie seinen Pfad unter **Zusätzliche Sicherungsordner** hinzu (Plugin-Konfiguration). Eingebundene Netzwerkfreigaben und Ordner mit Sicherungen werden dort mit einem Klick vorgeschlagen. Die Schaltfläche **Testen** prüft, ob Jeedom den Ordner lesen kann, zählt seine Sicherungen und prüft, ob die neueste die Jeedom-Datenbank (`DB_backup.sql`) enthält. Nur `.tar.gz`-Dateien, die direkt im Ordner liegen, werden berücksichtigt. Die Sicherungen werden einmal gelesen, in der nächsten Nacht, über die Plugin-Seite oder sofort mit **Sicherungen jetzt lesen**, das auch die Ordnerliste speichert. Eine an zwei Orten vorhandene Sicherung wird nur einmal gelesen; das Datum wird aus dem Dateinamen entnommen, was zuverlässiger ist als das Datum einer Kopie.
 
+### Eine Sicherung vom Computer hochladen
+
+Wenn Ihre alten Sicherungen auf Ihrem Computer liegen, liest **Sicherung hochladen** (Plugin-Konfiguration) sie, ohne der Box Zugriff auf einen Ordner zu geben. Wählen Sie eine oder mehrere Dateien `.tar.gz`, `.tgz`, `.tar` oder `.zip` (das Zip darf die `.tar.gz`-Sicherung enthalten). Jede Datei wird in Abschnitten gesendet, unabhängig von der Größenbeschränkung von PHP. Das Plugin prüft, ob sie die Jeedom-Datenbank enthält, liest sie im Hintergrund und löscht sie dann. Nichts wird wiederhergestellt. Der benötigte freie Speicherplatz wird vor dem Hochladen geprüft.
+
+Das Datum stammt aus dem Dateinamen, sonst von der Datenbank im Archiv, sonst von der Datei auf dem Computer. Eine bereits gelesene oder nach der ersten Erfassung des Plugins erstellte Sicherung wird abgelehnt, da sie nichts beitragen würde.
+
 ## Wo die Daten gespeichert werden
 
 Alle Daten des Plugins sind JSON-Dateien in `plugins/auditsante/data/`, unabhängig von der Jeedom-Datenbank:
@@ -190,8 +197,10 @@ Alle Daten des Plugins sind JSON-Dateien in `plugins/auditsante/data/`, unabhän
 |---|---|
 | `report.json` | letzter Auditbericht |
 | `ignored.json`, `comments.json` | ignorierte Prüfungen und Kommentare |
+| `excluded.json` | von einer Prüfung ausgeschlossene Elemente (Variablen) |
 | `names.json` | Namensarchiv (ein Eintrag pro Element: Name, Anwesenheits- und Löschdaten) |
 | `archive-state.json` | bereits gelesene Sicherungen, Daten der Erfassungen, Fortschritt des laufenden Lesens |
+| `tmp/` | vom Computer hochgeladene Sicherungen, bis sie gelesen sind (von Jeedom-Sicherungen ausgeschlossen) |
 
 Der Ordner bleibt bei Plugin-Updates erhalten, ist in den Jeedom-Sicherungen enthalten und wird mit dem Plugin entfernt. Er ist gegen das Lesen über das Web geschützt. Schreibvorgänge sind atomar: Ein Stromausfall während des Schreibens lässt die alte Datei unversehrt. Nur die Einstellungen der Konfigurationsseite bleiben in der Jeedom-Konfiguration.
 
@@ -222,11 +231,12 @@ Beispiel: ein wöchentliches Szenario, das Ihnen die Zusammenfassung sendet oder
 - **Bei neuen Problemen benachrichtigen**: Fügt dem Nachrichtencenter eine Nachricht hinzu, wenn eine Prüfung, die nichts meldete, ein Problem meldet.
 - **Schwellenwerte**: Frist, nach der ein nicht mehr laufendes Szenario gemeldet wird (180 Tage), Frist, nach der ein stummes Gerät gemeldet wird (30 Tage), Größe eines großen Logs (20 MB), Anzahl der Nachrichten, ab der das Nachrichtencenter überladen ist (50).
 - **Zusätzliche Sicherungsordner**: siehe « Weiter in die Vergangenheit zurückgehen ».
+- **Sicherung hochladen**: siehe « Eine Sicherung vom Computer hochladen ».
 
 ## Grenzen
 
 - Ein Befehl, der nur in einem **Code-Block** eines Szenarios über seinen Namen verwendet wird (`cmd::byString('#[Wohnzimmer][Lampe][Zustand]#')`), wird nicht erkannt: Das Gerät kann als verwaist erscheinen.
-- In einem **Code-Block** wird eine Variable erkannt, wenn ihr vollständiger Name in Anführungszeichen steht (`getData('SL_cycle')` oder ein Array mit Namen); wird ihr Name zusammengesetzt (`getData('SL_' . $name)`), erscheint sie als unbenutzt. Umgekehrt zählt ein Name in Anführungszeichen, der nicht wirklich verwendet wird (zum Beispiel in einem Kommentar), als Verwendung.
+- In einem **Code-Block** wird eine Variable erkannt, wenn ihr vollständiger Name in Anführungszeichen steht (`getData('SL_cycle')` oder ein Array mit Namen); wird ihr Name zusammengesetzt (`getData('SL_' . $name)`, `"SL_{$name}"`, `sprintf('SL_%s', $name)` oder `variable(SL_#trigger_name#)` in einer Aktion), gilt jede Variable, die mit dem festen Teil beginnt oder endet (hier `SL_`, mindestens 3 Zeichen), als verwendet; im Ergebnis wird nur ihre Anzahl angegeben. Umgekehrt zählt ein Name in Anführungszeichen, der nicht wirklich verwendet wird (zum Beispiel in einem Kommentar), als Verwendung.
 - Ein Szenario, das nur von der **API**, einem externen Programm oder der mobilen App gestartet wird, erscheint als « kann nie starten ». Ignorieren Sie die Prüfung in diesem Fall.
 - Plugins, die ihre Verknüpfungen anderswo als in der Konfiguration ihrer Geräte oder Befehle speichern, werden nicht erfasst.
 - « Stummes Gerät » beruht auf dem Datum des zuletzt empfangenen Werts, das durch einen Neustart, der den Cache leert, zurückgesetzt wird.

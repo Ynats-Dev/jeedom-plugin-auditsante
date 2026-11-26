@@ -18,6 +18,7 @@
 require_once __DIR__ . '/auditsanteTools.class.php';
 require_once __DIR__ . '/auditsanteStore.class.php';
 require_once __DIR__ . '/auditsanteIndex.class.php';
+require_once __DIR__ . '/auditsanteUpload.class.php';
 
 /**
  * Archive des noms : garde le nom de chaque commande, équipement, objet et scénario, pour nommer plus tard
@@ -396,11 +397,11 @@ class auditsanteRecovery {
    * Date d'une sauvegarde : celle de son nom (backup-...-2026-11-20-09h28.tar.gz), plus fiable que la date du fichier
    * pour une copie (NAS, cloud), sinon la date du fichier.
    */
-  private static function backupDate($_path) {
+  public static function backupDate($_path, $_time = null) {
     if (preg_match('/(\d{4}-\d{2}-\d{2})-(\d{2})h(\d{2})/', basename($_path), $match)) {
       return $match[1] . ' ' . $match[2] . ':' . $match[3] . ':00';
     }
-    return date('Y-m-d H:i:s', (int) filemtime($_path));
+    return date('Y-m-d H:i:s', ($_time !== null) ? (int) $_time : (int) filemtime($_path));
   }
 
   /** Sauvegardes trouvées, de la plus récente à la plus ancienne : [{path, name, size, date, key, dir}] */
@@ -411,6 +412,8 @@ class auditsanteRecovery {
         $paths[] = $path;
       }
     }
+    // Sauvegardes envoyées depuis la page de configuration
+    $paths = array_merge($paths, auditsanteUpload::files());
     $return = array();
     $seen = array();
     foreach ($paths as $path) {
@@ -437,6 +440,27 @@ class auditsanteRecovery {
       $_state['indexed'][$_file['key']] = array('date' => $_file['date'], 'read' => $_read, 'writes' => $_writes, 'seconds' => $_seconds, 'size' => $_file['size'], 'at' => date('Y-m-d H:i:s'));
       return $_state;
     });
+  }
+
+  /**
+   * Sort d'une sauvegarde envoyée : known (déjà lue), useless (postérieure au premier relevé) ou pending (à lire).
+   * Une sauvegarde dont la lecture avait échoué peut être renvoyée : elle redevient à lire.
+   */
+  public static function uploadStatus($_key, $_date) {
+    $state = self::state();
+    if (!empty($state['indexed'][$_key]['read'])) {
+      return 'known';
+    }
+    if (!empty($state['firstSnapshot']) && $_date >= $state['firstSnapshot']) {
+      return 'useless';
+    }
+    if (isset($state['indexed'][$_key])) {
+      self::updateState(function ($_state) use ($_key) {
+        unset($_state['indexed'][$_key]);
+        return $_state;
+      });
+    }
+    return 'pending';
   }
 
   /**
@@ -822,6 +846,8 @@ class auditsanteRecovery {
         }
       }
       self::finalizeGone();
+      // Sauvegardes envoyées depuis la configuration : supprimées une fois lues
+      auditsanteUpload::clean(self::state()['indexed']);
       $job['unknown'] = count(self::unknown());
       $job['found'] = max(0, $before - $job['unknown']);
       self::updateState(function ($_state) {
@@ -967,11 +993,15 @@ class auditsanteRecovery {
    * La lecture s'arrête dès que les quatre tables ont été lues.
    */
   public static function readBackupTables($_path) {
-    // GNU tar : --occurrence arrête la lecture de l'archive au premier fichier trouvé. Sinon, tar standard.
-    $commands = array(
-      'tar -xzOf ' . escapeshellarg($_path) . ' --wildcards --occurrence=1 ' . escapeshellarg('*DB_backup.sql'),
-      'tar -xzOf ' . escapeshellarg($_path) . ' ./DB_backup.sql',
-    );
+    if (!preg_match('/\.tar\.gz$/', $_path)) {
+      $commands = auditsanteUpload::readCommands($_path);
+    } else {
+      // GNU tar : --occurrence arrête la lecture de l'archive au premier fichier trouvé. Sinon, tar standard.
+      $commands = array(
+        'tar -xzOf ' . escapeshellarg($_path) . ' --wildcards --occurrence=1 ' . escapeshellarg('*DB_backup.sql'),
+        'tar -xzOf ' . escapeshellarg($_path) . ' ./DB_backup.sql',
+      );
+    }
     foreach ($commands as $command) {
       $tables = self::readDump($command);
       if ($tables !== null) {

@@ -202,7 +202,8 @@
   /** Découpe un élément de liste : nom, qualificatifs, détail et explication. */
   function parseItem(_item) {
     var parts = splitItem(itemText(_item))
-    var parsed = { head: parts[0], url: (_item && typeof _item === 'object' && _item.url) || '', tags: [], text: parts[1], note: '' }
+    var isObject = (_item && typeof _item === 'object')
+    var parsed = { head: parts[0], url: (isObject && _item.url) || '', exclude: (isObject && _item.exclude) || '', tags: [], text: parts[1], note: '' }
     var cut
     while ((cut = splitNote(parsed.head)).note !== '') {
       parsed.head = cut.text
@@ -217,15 +218,18 @@
     return parsed
   }
 
-  /** Liste des éléments d'un contrôle : les lignes consécutives d'un même élément sont regroupées. */
-  function renderItems(_items) {
+  /**
+   * Liste des éléments d'un contrôle : les lignes consécutives d'un même élément sont regroupées.
+   * _canExclude : chaque élément qui porte une clé d'exclusion reçoit un bouton « Exclure de l'audit ».
+   */
+  function renderItems(_items, _canExclude) {
     var groups = []
     _items.forEach(function (item) {
       var parsed = parseItem(item)
-      var key = parsed.head + '|' + parsed.tags.join('|') + '|' + parsed.url
+      var key = parsed.head + '|' + parsed.tags.join('|') + '|' + parsed.url + '|' + parsed.exclude
       var last = groups[groups.length - 1]
       if (!last || last.key !== key || parsed.text === '') {
-        last = { key: key, head: parsed.head, tags: parsed.tags, url: parsed.url, lines: [] }
+        last = { key: key, head: parsed.head, tags: parsed.tags, url: parsed.url, exclude: _canExclude ? parsed.exclude : '', lines: [] }
         groups.push(last)
       }
       if (parsed.text !== '' || parsed.note !== '') last.lines.push(parsed)
@@ -257,10 +261,23 @@
       })
     }
     html += '</span>'
-    if (_group.url) {
-      return '<li><a class="auditsante-item" href="' + esc(_group.url) + '" target="_blank" rel="noopener" title="{{Ouvrir}}">' + html + '<i class="fas fa-external-link-alt auditsante-item-open"></i></a></li>'
-    }
-    return '<li><span class="auditsante-item">' + html + '</span></li>'
+    var row = _group.url
+      ? '<a class="auditsante-item" href="' + esc(_group.url) + '" target="_blank" rel="noopener" title="{{Ouvrir}}">' + html + '<i class="fas fa-external-link-alt auditsante-item-open"></i></a>'
+      : '<span class="auditsante-item">' + html + '</span>'
+    if (!_group.exclude) return '<li>' + row + '</li>'
+    // Bouton hors du lien : un clic dessus ne doit pas ouvrir la page de l'élément
+    return '<li class="auditsante-item-row">' + row
+      + '<button type="button" class="auditsante-item-exclude auditsante-bt-exclude" data-key="' + esc(_group.exclude) + '" title="{{Exclure de l\'audit : il sert, mais l\'audit ne le voit pas}}"><i class="fas fa-eye-slash"></i></button></li>'
+  }
+
+  /** Éléments que l'utilisateur a exclus du contrôle, chacun avec un bouton pour le réintégrer. */
+  function renderExcluded(_check) {
+    var html = '<div class="auditsante-excluded"><h4><i class="fas fa-eye-slash"></i> {{Exclus de l\'audit}} (' + _check.excluded.length + ')</h4><ul class="auditsante-items">'
+    _check.excluded.forEach(function (key) {
+      html += '<li class="auditsante-item-row"><span class="auditsante-item"><span class="auditsante-item-main"><span class="auditsante-item-head"><span class="auditsante-item-name">' + esc(key) + '</span></span></span></span>'
+        + '<button type="button" class="auditsante-item-exclude auditsante-bt-include" data-key="' + esc(key) + '" title="{{Réintégrer dans l\'audit}}"><i class="fas fa-eye"></i></button></li>'
+    })
+    return html + '</ul></div>'
   }
 
   /* --------------- Recherche des noms des éléments supprimés --------------- */
@@ -697,8 +714,9 @@
     html += '<div class="auditsante-check-body"><div class="auditsante-check-inner">'
     if (canRecover(_check)) html += renderRecoverCallout(_check)
     if (_check.items && _check.items.length > 0) {
-      html += renderItems(_check.items)
+      html += renderItems(_check.items, _check.excludable && !_check.ignored)
     }
+    if (_check.excluded && _check.excluded.length > 0) html += renderExcluded(_check)
     html += '<div class="auditsante-explain">'
     html += '<div><h4><i class="far fa-lightbulb"></i> {{Pourquoi}}</h4><p>' + esc(_check.description) + '</p></div>'
     html += '<div><h4><i class="fas fa-route"></i> {{Que faire}}</h4><p>' + esc(_check.recommendation) + '</p></div>'
@@ -892,6 +910,12 @@
   function rerun(_id) {
     busy(_id, true)
     request('rerunCheck', { id: _id }, setReport, function () { busy(_id, false) })
+  }
+
+  /** Exclut un élément du contrôle (_excluded true) ou le réintègre, puis le contrôle est revérifié. */
+  function setExcluded(_id, _key, _excluded) {
+    busy(_id, true)
+    request('setExcluded', { id: _id, key: _key, excluded: _excluded ? 1 : 0 }, setReport, function () { busy(_id, false) })
   }
 
   function closeForm() {
@@ -1221,7 +1245,10 @@
       var row = event.target.closest('.auditsante-check')
       if (!row) return
       var id = row.getAttribute('data-id')
-      if (event.target.closest('.auditsante-bt-fix')) {
+      var exclude = event.target.closest('.auditsante-bt-exclude, .auditsante-bt-include')
+      if (exclude) {
+        setExcluded(id, exclude.getAttribute('data-key'), exclude.classList.contains('auditsante-bt-exclude'))
+      } else if (event.target.closest('.auditsante-bt-fix')) {
         applyFix(id)
       } else if (event.target.closest('.auditsante-bt-goto-job')) {
         document.getElementById('sa_job').scrollIntoView({ behavior: 'smooth', block: 'center' })

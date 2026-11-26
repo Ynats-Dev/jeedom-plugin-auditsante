@@ -107,7 +107,7 @@ The plugin reads the whole installation once (objects, devices, commands, scenar
 | Scheduled tasks in error | Medium | Tasks of the task engine (core and plugin crons) in error no longer run properly. |  |
 | Orphan tasks and listeners | Medium | Scheduled tasks and listeners that call a class or function that no longer exists, usually that of a removed plugin. They run for nothing and fill the logs with errors. | Yes |
 | Disabled plugins | Low | A disabled plugin remains installed: it takes up space, appears in the update center and its devices become ghosts. |  |
-| Active plugins without devices | Info | Enabled plugins that have no device. Some plugins work without devices (tools, themes, gateways); the others may be useless. |  |
+| Active plugins without devices | Info | Enabled plugins that have no device. Some plugins work without devices (tools, themes, gateways); the others may be useless. Plugins that do not manage devices by nature (their page shows neither a device list nor an Add button: assistants, tools, themes) are not reported; only their number is shown. |  |
 | Leftovers of removed plugins | Low | Configuration and update center entries of plugins that are no longer installed. They do not affect operation but reappear if the plugin is reinstalled. |  |
 
 ### Database and files
@@ -151,6 +151,7 @@ Depending on the check, the detail offers:
 - an **automatic fix** button (magic wand icon) only for risk-free cases: deleting what nothing can use anymore (commands without a device, history of deleted commands, logs of deleted scenarios, tasks and listeners of a removed plugin, variables of deleted items). A window explains what will be deleted before anything happens. Make a backup first;
 - **Check again**, to rerun only this check after a manual fix;
 - **Ignore**, if the situation is intended (a backup device kept disabled, a scenario run by the API...). The check leaves the score and stays visible in the **Ignored** filter. Choose a duration (7 days, 30 days, 3 months, 1 year or no limit): when it ends, the check counts again and a Jeedom message warns you. You can note the reason;
+- **Exclude an item** (crossed-out eye icon to the right of its name, for unused variables), when you know it is used although the audit does not see it (variable read by an external program, name built in a way the audit does not recognize). The check is run again right away: the item leaves the list and the count, and moves to the **Excluded from the audit** list, where one click brings it back. Unlike **Ignore**, the rest of the check still counts in the score;
 - **Comment**, to keep a note on the check.
 
 The plugin never deletes a scenario, a device or a command that still has a device: those decisions are yours.
@@ -182,6 +183,12 @@ In the checks for broken references, commands without a device and orphan histor
 
 By default, Jeedom keeps its backups on the box for only a few days. If you copy them elsewhere (NAS share, folder synchronized with the cloud), mount that folder on the box and add its path in **Additional backup folders** (plugin configuration). Mounted network shares and folders containing backups are suggested there in one click. The **Test** button checks that Jeedom can read the folder, counts its backups and checks that the most recent one does contain the Jeedom database (`DB_backup.sql`). Only `.tar.gz` files placed directly in the folder are taken into account. Backups are read once, the next night, from the plugin page, or right away with **Read backups now**, which also saves the folder list. A backup present in two places is read only once; the date is taken from the file name, more reliable than the date of a copy.
 
+### Uploading a backup from your computer
+
+If your old backups are on your computer, **Upload a backup** (plugin configuration) reads them without giving the box access to a folder. Choose one or more `.tar.gz`, `.tgz`, `.tar` or `.zip` files (the zip may contain the `.tar.gz` backup). Each file is sent in chunks, regardless of PHP's size limit. The plugin checks that it contains the Jeedom database, then reads it in the background and deletes it. Nothing is restored. The free space needed is checked before the upload.
+
+The date is taken from the file name, otherwise from the database in the archive, otherwise from the file on the computer. A backup already read, or made after the plugin's first record, is refused because it would add nothing.
+
 ## Where the data is stored
 
 All the plugin data are JSON files in `plugins/auditsante/data/`, independent of the Jeedom database:
@@ -190,8 +197,10 @@ All the plugin data are JSON files in `plugins/auditsante/data/`, independent of
 |---|---|
 | `report.json` | last audit report |
 | `ignored.json`, `comments.json` | ignored checks and comments |
+| `excluded.json` | items excluded from a check (variables) |
 | `names.json` | name archive (one entry per item: name, presence and deletion dates) |
 | `archive-state.json` | backups already read, snapshot dates, progress of the current reading |
+| `tmp/` | backups uploaded from the computer, until they are read (excluded from Jeedom backups) |
 
 The folder is kept when the plugin is updated, included in Jeedom backups and removed with the plugin. It is protected against reading from the web. Writes are atomic: a power cut during a write leaves the old file intact. Only the settings of the configuration page stay in the Jeedom configuration.
 
@@ -222,11 +231,12 @@ Example: a weekly scenario that sends you the summary, or warns you when **Serio
 - **Warn about new issues**: adds a message to the message center when a check that reported nothing reports an issue.
 - **Thresholds**: delay after which a scenario that no longer runs is reported (180 days), delay after which a silent device is reported (30 days), size of a large log (20 MB), number of messages above which the message center is cluttered (50).
 - **Additional backup folders**: see « Going further back in time ».
+- **Upload a backup**: see « Uploading a backup from your computer ».
 
 ## Limits
 
 - A command used only in a scenario **code block**, by its name (`cmd::byString('#[Living room][Lamp][State]#')`), is not recognized: the device may appear as an orphan.
-- In a **code block**, a variable is recognized if its full name appears in quotes (`getData('SL_cycle')`, or an array of names); if its name is assembled (`getData('SL_' . $name)`), it appears as unused. Conversely, a name in quotes that is not really used (in a comment, for example) counts as a use.
+- In a **code block**, a variable is recognized if its full name appears in quotes (`getData('SL_cycle')`, or an array of names); if its name is assembled (`getData('SL_' . $name)`, `"SL_{$name}"`, `sprintf('SL_%s', $name)`, or `variable(SL_#trigger_name#)` in an action), any variable that starts or ends with the fixed part (`SL_` here, at least 3 characters) is considered used, and only their number is shown in the result. Conversely, a name in quotes that is not really used (in a comment, for example) counts as a use.
 - A scenario run only by the **API**, an external program or the mobile app appears as « can never run ». Ignore the check in that case.
 - Plugins that store their links elsewhere than in the configuration of their devices or commands are not seen.
 - « Silent device » relies on the date of the last value received, which is reset by a restart that clears the cache.

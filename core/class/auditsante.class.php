@@ -21,6 +21,7 @@ require_once __DIR__ . '/auditsanteStore.class.php';
 require_once __DIR__ . '/auditsanteIndex.class.php';
 require_once __DIR__ . '/auditsanteChecks.class.php';
 require_once __DIR__ . '/auditsanteRecovery.class.php';
+require_once __DIR__ . '/auditsanteUpload.class.php';
 
 /**
  * Audit de santé de l'installation Jeedom : orphelins, références cassées, éléments oubliés, ressources.
@@ -60,6 +61,7 @@ class auditsante extends eqLogic {
   }
 
   public static function cronDaily() {
+    auditsanteUpload::clean();
     // Sauvegardes pas encore lues (premières sauvegardes, dossier ajouté) : lecture en tâche de fond
     try {
       if (!in_array(auditsanteRecovery::job()['status'], array('running', 'auditing')) && count(auditsanteRecovery::pendingBackups()) > 0) {
@@ -384,6 +386,37 @@ class auditsante extends eqLogic {
     return $report;
   }
 
+  /** Longueur maximale de la clé d'un élément exclu (nom de variable : 255 caractères dans la base Jeedom) */
+  const EXCLUDE_KEY_MAX = 255;
+
+  /**
+   * Exclut un élément d'un contrôle (l'utilisateur sait qu'il sert, l'audit ne le voit pas) ou le réintègre,
+   * puis revérifie ce contrôle. Seuls les contrôles dont la définition porte « exclude » l'acceptent.
+   */
+  public static function setExcluded($_id, $_key, $_excluded, $_by = '') {
+    self::assertCheck($_id);
+    $definitions = auditsanteChecks::definitions();
+    if (empty($definitions[$_id]['exclude'])) {
+      throw new Exception(__('Ce contrôle ne permet pas d\'exclure un élément', __FILE__) . ' : ' . $_id);
+    }
+    $key = (string) $_key;
+    if ($key === '' || strlen($key) > self::EXCLUDE_KEY_MAX) {
+      throw new Exception(__('Élément invalide', __FILE__));
+    }
+    auditsanteStore::update('excluded', function ($_list) use ($_id, $key, $_excluded, $_by) {
+      if ($_excluded) {
+        $_list[$_id][$key] = array('since' => date('Y-m-d H:i:s'), 'by' => (string) $_by);
+      } else {
+        unset($_list[$_id][$key]);
+        if (empty($_list[$_id])) {
+          unset($_list[$_id]);
+        }
+      }
+      return $_list;
+    });
+    return self::rerunCheck($_id);
+  }
+
   /** Enregistre (ou supprime si vide) le commentaire d'un contrôle (nom distinct de eqLogic::setComment, méthode d'instance du core). */
   public static function setCheckComment($_id, $_text, $_by = '') {
     self::assertCheck($_id);
@@ -525,6 +558,8 @@ class auditsante extends eqLogic {
         'status' => $status,
         'detail' => ($result === null) ? '' : $result['detail'],
         'items' => ($result === null) ? array() : $result['items'],
+        'excludable' => !empty($def['exclude']),
+        'excluded' => ($result !== null && isset($result['excluded'])) ? $result['excluded'] : array(),
         'ignored' => $isIgnored,
         'ignoredSince' => $isIgnored ? $ignored[$id]['since'] : null,
         'ignoredUntil' => $isIgnored ? $ignored[$id]['until'] : null,

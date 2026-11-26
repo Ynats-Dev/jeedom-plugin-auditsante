@@ -15,3 +15,4 @@ lang: de_DE
 - Plugin-Daten in JSON-Dateien (`data/`), unabhängig von der Jeedom-Datenbank.
 - Bewertung, Note, für eine bestimmte Dauer ignorierte Prüfungen, Kommentare, Diagnosebericht, in Szenarien nutzbares Gerät.
 - Oberfläche und bebilderte Dokumentation auf Französisch, Englisch, Deutsch, Spanisch und Italienisch.
+- Hochladen einer Sicherung vom Computer (.tar.gz, .tgz, .tar oder .zip), ohne Zugriff auf einen Ordner zu geben.

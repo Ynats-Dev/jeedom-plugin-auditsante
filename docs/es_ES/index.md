@@ -107,7 +107,7 @@ El plugin lee una sola vez toda la instalación (objetos, equipos, comandos, esc
 | Tareas programadas en error | Media | Las tareas del motor de tareas (crons del core y de los plugins) en error ya no se ejecutan correctamente. |  |
 | Tareas y listeners huérfanos | Media | Tareas programadas y listeners que llaman a una clase o función que ya no existe, generalmente la de un plugin eliminado. Funcionan en vacío y llenan los logs de errores. | Sí |
 | Plugins desactivados | Baja | Un plugin desactivado sigue instalado: ocupa espacio, aparece en el centro de actualizaciones y sus equipos se convierten en fantasmas. |  |
-| Plugins activos sin equipos | Info | Plugins activados que no tienen ningún equipo. Algunos plugins funcionan sin equipos (herramientas, temas, pasarelas); los demás quizá sean inútiles. |  |
+| Plugins activos sin equipos | Info | Plugins activados que no tienen ningún equipo. Algunos plugins funcionan sin equipos (herramientas, temas, pasarelas); los demás quizá sean inútiles. Los plugins que por naturaleza no gestionan equipos (su página no muestra ni lista de equipos ni botón Añadir: asistentes, herramientas, temas) no se señalan; solo se indica su número. |  |
 | Restos de plugins eliminados | Baja | Configuración y entradas del centro de actualizaciones de plugins que ya no están instalados. No afectan al funcionamiento pero reaparecen si se reinstala el plugin. |  |
 
 ### Base de datos y archivos
@@ -151,6 +151,7 @@ Según la comprobación, el detalle propone:
 - un botón de **corrección automática** (icono de varita mágica) solo para los casos sin riesgo: eliminar lo que ya nada puede usar (comandos sin equipo, historial de comandos eliminados, logs de escenarios eliminados, tareas y listeners de un plugin eliminado, variables de elementos eliminados). Una ventana explica lo que se va a eliminar antes de cualquier acción. Haga antes una copia de seguridad;
 - **Volver a comprobar**, para relanzar solo esta comprobación tras una corrección manual;
 - **Ignorar**, si la situación es intencionada (un equipo de reserva mantenido desactivado, un escenario ejecutado por la API...). La comprobación sale de la nota y sigue visible en el filtro **Ignorados**. Elija una duración (7 días, 30 días, 3 meses, 1 año o sin límite): al terminar, la comprobación vuelve a contar y un mensaje de Jeedom le avisa. Puede anotar el motivo;
+- **Excluir un elemento** (icono de ojo tachado a la derecha de su nombre, para las variables no usadas), cuando sabe que se usa aunque la auditoría no lo vea (variable leída por un programa externo, nombre construido de una forma que la auditoría no reconoce). La comprobación se vuelve a ejecutar de inmediato: el elemento sale de la lista y del recuento, y pasa a la lista **Excluidos de la auditoría**, desde donde un clic lo vuelve a incluir. A diferencia de **Ignorar**, el resto de la comprobación sigue contando en la nota;
 - **Comentar**, para guardar una nota sobre la comprobación.
 
 El plugin nunca elimina un escenario, un equipo o un comando que aún tiene un equipo: esas decisiones le corresponden.
@@ -182,6 +183,12 @@ En las comprobaciones de referencias rotas, comandos sin equipo e historial hué
 
 Por defecto, Jeedom solo conserva sus copias de seguridad unos días en la box. Si las copia en otro lugar (recurso NAS, carpeta sincronizada con la nube), monte esa carpeta en la box y añada su ruta en **Carpetas de copias de seguridad adicionales** (configuración del plugin). Allí se proponen en un clic los recursos de red montados y las carpetas que contienen copias de seguridad. El botón **Probar** comprueba que Jeedom puede leer la carpeta, cuenta sus copias y verifica que la más reciente contiene la base de datos de Jeedom (`DB_backup.sql`). Solo se tienen en cuenta los archivos `.tar.gz` situados directamente en la carpeta. Las copias se leen una vez, la noche siguiente, desde la página del plugin o enseguida con **Leer las copias ahora**, que también guarda la lista de carpetas. Una copia de seguridad presente en dos lugares se lee una sola vez; la fecha se toma del nombre del archivo, más fiable que la fecha de una copia.
 
+### Enviar una copia desde el ordenador
+
+Si sus copias antiguas están en su ordenador, **Enviar una copia de seguridad** (configuración del plugin) permite leerlas sin dar a la box acceso a una carpeta. Elija uno o varios archivos `.tar.gz`, `.tgz`, `.tar` o `.zip` (el zip puede contener la copia `.tar.gz`). Cada archivo se envía por fragmentos, sin depender del límite de tamaño de PHP. El plugin comprueba que contiene la base de datos de Jeedom, lo lee en segundo plano y lo elimina. No se restaura nada. El espacio libre necesario se comprueba antes del envío.
+
+La fecha es la del nombre del archivo; si no, la de la base de datos dentro del archivo; si no, la del archivo en el ordenador. Una copia ya leída, o posterior al primer registro del plugin, se rechaza porque no aportaría nada.
+
 ## Dónde se guardan los datos
 
 Todos los datos del plugin son archivos JSON en `plugins/auditsante/data/`, independientes de la base de datos de Jeedom:
@@ -190,8 +197,10 @@ Todos los datos del plugin son archivos JSON en `plugins/auditsante/data/`, inde
 |---|---|
 | `report.json` | último informe de auditoría |
 | `ignored.json`, `comments.json` | comprobaciones ignoradas y comentarios |
+| `excluded.json` | elementos excluidos de una comprobación (variables) |
 | `names.json` | archivo de nombres (una entrada por elemento: nombre, fechas de presencia y de eliminación) |
 | `archive-state.json` | copias de seguridad ya leídas, fechas de los registros, progreso de la lectura en curso |
+| `tmp/` | copias enviadas desde el ordenador, hasta que se leen (excluidas de las copias de Jeedom) |
 
 La carpeta se conserva al actualizar el plugin, se incluye en las copias de seguridad de Jeedom y se elimina con el plugin. Está protegida contra la lectura desde la web. Las escrituras son atómicas: un corte de corriente durante una escritura deja intacto el archivo anterior. Solo los ajustes de la página de configuración permanecen en la configuración de Jeedom.
 
@@ -222,11 +231,12 @@ Ejemplo: un escenario semanal que le envía el resumen, o que le avisa cuando **
 - **Avisar de nuevos problemas**: añade un mensaje en el centro de mensajes cuando una comprobación que no señalaba nada señala un problema.
 - **Umbrales**: plazo tras el cual se señala un escenario que ya no se ejecuta (180 días), plazo tras el cual se señala un equipo mudo (30 días), tamaño de un log voluminoso (20 MB), número de mensajes a partir del cual el centro de mensajes está saturado (50).
 - **Carpetas de copias de seguridad adicionales**: ver « Remontarse más atrás en el tiempo ».
+- **Enviar una copia de seguridad**: ver « Enviar una copia desde el ordenador ».
 
 ## Límites
 
 - Un comando usado solo en un **bloque código** de un escenario, por su nombre (`cmd::byString('#[Salón][Lámpara][Estado]#')`), no se reconoce: el equipo puede aparecer como huérfano.
-- En un **bloque código**, una variable se reconoce si su nombre completo figura entre comillas (`getData('SL_cycle')`, o un array de nombres); si su nombre se compone (`getData('SL_' . $nombre)`), aparece como sin usar. A la inversa, un nombre entre comillas que no se usa realmente (en un comentario, por ejemplo) cuenta como un uso.
+- En un **bloque código**, una variable se reconoce si su nombre completo figura entre comillas (`getData('SL_cycle')`, o un array de nombres); si su nombre se compone (`getData('SL_' . $nombre)`, `"SL_{$nombre}"`, `sprintf('SL_%s', $nombre)`, o `variable(SL_#trigger_name#)` en una acción), toda variable que empieza o termina por la parte fija (`SL_` aquí, al menos 3 caracteres) se considera usada, y el resultado solo indica su número. A la inversa, un nombre entre comillas que no se usa realmente (en un comentario, por ejemplo) cuenta como un uso.
 - Un escenario ejecutado solo por la **API**, un programa externo o la aplicación móvil aparece como « que nunca puede ejecutarse ». Ignore la comprobación en ese caso.
 - Los plugins que guardan sus vínculos fuera de la configuración de sus equipos o comandos no se detectan.
 - « Equipo mudo » se basa en la fecha del último valor recibido, que se reinicia con un reinicio que vacía la caché.

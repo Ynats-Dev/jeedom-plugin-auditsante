@@ -107,7 +107,7 @@ Il plugin legge una sola volta l'intera installazione (oggetti, dispositivi, com
 | Attività pianificate in errore | Media | Le attività del motore delle attività (cron del core e dei plugin) in errore non vengono più eseguite correttamente. |  |
 | Attività e listener orfani | Media | Attività pianificate e listener che richiamano una classe o una funzione che non esiste più, di solito quella di un plugin rimosso. Girano a vuoto e riempiono i log di errori. | Sì |
 | Plugin disattivati | Bassa | Un plugin disattivato resta installato: occupa spazio, appare nel centro aggiornamenti e i suoi dispositivi diventano fantasmi. |  |
-| Plugin attivi senza dispositivi | Info | Plugin attivati che non hanno alcun dispositivo. Alcuni plugin funzionano senza dispositivi (strumenti, temi, gateway); gli altri forse sono inutili. |  |
+| Plugin attivi senza dispositivi | Info | Plugin attivati che non hanno alcun dispositivo. Alcuni plugin funzionano senza dispositivi (strumenti, temi, gateway); gli altri forse sono inutili. I plugin che per natura non gestiscono dispositivi (la loro pagina non mostra né un elenco di dispositivi né un pulsante Aggiungi: assistenti, strumenti, temi) non sono segnalati; ne è indicato solo il numero. |  |
 | Residui di plugin rimossi | Bassa | Configurazione e voci del centro aggiornamenti di plugin che non sono più installati. Non disturbano il funzionamento ma riappaiono se il plugin viene reinstallato. |  |
 
 ### Database e file
@@ -151,6 +151,7 @@ A seconda del controllo, il dettaglio propone:
 - un pulsante di **correzione automatica** (icona della bacchetta magica) solo per i casi senza rischi: eliminare ciò che nulla può più usare (comandi senza dispositivo, cronologia di comandi eliminati, log di scenari eliminati, attività e listener di un plugin rimosso, variabili di elementi eliminati). Una finestra spiega cosa verrà eliminato prima di qualsiasi azione. Faccia prima un backup;
 - **Ricontrolla**, per rieseguire solo questo controllo dopo una correzione manuale;
 - **Ignora**, se la situazione è voluta (un dispositivo di riserva lasciato disattivato, uno scenario avviato dall'API...). Il controllo esce dal punteggio e resta visibile nel filtro **Ignorati**. Scelga una durata (7 giorni, 30 giorni, 3 mesi, 1 anno o senza limite): al termine, il controllo torna a contare e un messaggio di Jeedom la avvisa. Può annotare il motivo;
+- **Escludere un elemento** (icona occhio barrato a destra del suo nome, per le variabili inutilizzate), quando sai che è usato anche se l'audit non lo vede (variabile letta da un programma esterno, nome costruito in un modo che l'audit non riconosce). Il controllo viene subito rieseguito: l'elemento esce dall'elenco e dal conteggio e passa nell'elenco **Esclusi dall'audit**, da cui un clic lo reinserisce. A differenza di **Ignora**, il resto del controllo continua a contare nel punteggio;
 - **Commenta**, per conservare una nota sul controllo.
 
 Il plugin non elimina mai uno scenario, un dispositivo o un comando che ha ancora un dispositivo: queste decisioni spettano a lei.
@@ -182,6 +183,12 @@ Nei controlli dei riferimenti interrotti, dei comandi senza dispositivo e della 
 
 Per impostazione predefinita, Jeedom conserva i suoi backup sulla box solo per pochi giorni. Se li copia altrove (condivisione NAS, cartella sincronizzata con il cloud), monti quella cartella sulla box e aggiunga il suo percorso in **Cartelle di backup aggiuntive** (configurazione del plugin). Le condivisioni di rete montate e le cartelle che contengono backup vi sono proposte con un clic. Il pulsante **Testa** verifica che Jeedom possa leggere la cartella, conta i suoi backup e controlla che il più recente contenga il database di Jeedom (`DB_backup.sql`). Vengono considerati solo i file `.tar.gz` presenti direttamente nella cartella. I backup vengono letti una volta, la notte seguente, dalla pagina del plugin o subito con **Leggi i backup ora**, che salva anche l'elenco delle cartelle. Un backup presente in due posti viene letto una sola volta; la data viene presa dal nome del file, più affidabile della data di una copia.
 
+### Inviare un backup dal computer
+
+Se i suoi vecchi backup sono sul computer, **Invia un backup** (configurazione del plugin) permette di leggerli senza dare alla box l'accesso a una cartella. Scelga uno o più file `.tar.gz`, `.tgz`, `.tar` o `.zip` (lo zip può contenere il backup `.tar.gz`). Ogni file viene inviato a blocchi, senza dipendere dal limite di dimensione di PHP. Il plugin verifica che contenga il database di Jeedom, lo legge in background e poi lo elimina. Nulla viene ripristinato. Lo spazio libero necessario viene controllato prima dell'invio.
+
+La data è quella del nome del file, altrimenti quella del database nell'archivio, altrimenti quella del file sul computer. Un backup già letto, o successivo alla prima registrazione del plugin, viene rifiutato perché non aggiungerebbe nulla.
+
 ## Dove sono memorizzati i dati
 
 Tutti i dati del plugin sono file JSON in `plugins/auditsante/data/`, indipendenti dal database di Jeedom:
@@ -190,8 +197,10 @@ Tutti i dati del plugin sono file JSON in `plugins/auditsante/data/`, indipenden
 |---|---|
 | `report.json` | ultimo rapporto di audit |
 | `ignored.json`, `comments.json` | controlli ignorati e commenti |
+| `excluded.json` | elementi esclusi da un controllo (variabili) |
 | `names.json` | archivio dei nomi (una voce per elemento: nome, date di presenza e di eliminazione) |
 | `archive-state.json` | backup già letti, date dei rilevamenti, avanzamento della lettura in corso |
+| `tmp/` | backup inviati dal computer, fino alla lettura (esclusi dai backup di Jeedom) |
 
 La cartella viene conservata durante gli aggiornamenti del plugin, inclusa nei backup di Jeedom e rimossa con il plugin. È protetta contro la lettura dal web. Le scritture sono atomiche: un'interruzione di corrente durante una scrittura lascia intatto il file precedente. Solo le impostazioni della pagina di configurazione restano nella configurazione di Jeedom.
 
@@ -222,11 +231,12 @@ Esempio: uno scenario settimanale che le invia il riepilogo, o che la avvisa qua
 - **Avvisa dei nuovi problemi**: aggiunge un messaggio nel centro messaggi quando un controllo che non segnalava nulla segnala un problema.
 - **Soglie**: ritardo dopo il quale viene segnalato uno scenario che non si avvia più (180 giorni), ritardo dopo il quale viene segnalato un dispositivo muto (30 giorni), dimensione di un log voluminoso (20 MB), numero di messaggi oltre il quale il centro messaggi è sovraccarico (50).
 - **Cartelle di backup aggiuntive**: vedi « Risalire più indietro nel tempo ».
+- **Invia un backup**: vedi « Inviare un backup dal computer ».
 
 ## Limiti
 
 - Un comando usato solo in un **blocco codice** di uno scenario, tramite il suo nome (`cmd::byString('#[Soggiorno][Lampada][Stato]#')`), non viene riconosciuto: il dispositivo può apparire come orfano.
-- In un **blocco codice**, una variabile è riconosciuta se il suo nome completo compare tra virgolette (`getData('SL_cycle')`, o un array di nomi); se il suo nome è composto (`getData('SL_' . $nome)`), appare come inutilizzata. Al contrario, un nome tra virgolette che non è realmente usato (in un commento, ad esempio) conta come un uso.
+- In un **blocco codice**, una variabile è riconosciuta se il suo nome completo compare tra virgolette (`getData('SL_cycle')`, o un array di nomi); se il suo nome è composto (`getData('SL_' . $nome)`, `"SL_{$nome}"`, `sprintf('SL_%s', $nome)`, o `variable(SL_#trigger_name#)` in un'azione), ogni variabile che inizia o finisce con la parte fissa (`SL_` qui, almeno 3 caratteri) è considerata usata, e il risultato ne indica solo il numero. Al contrario, un nome tra virgolette che non è realmente usato (in un commento, ad esempio) conta come un uso.
 - Uno scenario avviato solo dall'**API**, da un programma esterno o dall'app mobile appare come « che non può mai avviarsi ». In tal caso ignori il controllo.
 - I plugin che memorizzano i loro collegamenti al di fuori della configurazione dei propri dispositivi o comandi non vengono rilevati.
 - « Dispositivo muto » si basa sulla data dell'ultimo valore ricevuto, che viene azzerata da un riavvio che svuota la cache.

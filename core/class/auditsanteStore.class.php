@@ -21,6 +21,7 @@
  *   report.json        dernier rapport d'audit (résultats bruts des contrôles)
  *   ignored.json       contrôles ignorés {id => {since, until, by}}
  *   comments.json      commentaires {id => {text, date, by}}
+ *   excluded.json      éléments exclus d'un contrôle par l'utilisateur {id => {clé => {since, by}}}
  *   names.json         archive des noms {"type:id" => {type, id, name, first_seen, last_seen, gone_seen, live, source}}
  *   archive-state.json état de l'archive {snapshot, firstSnapshot, indexed, job}
  *
