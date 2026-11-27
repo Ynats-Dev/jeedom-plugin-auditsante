@@ -791,12 +791,14 @@ a.auditsante-item:hover .auditsante-item-open {
 }
 .auditsante-item-exclude {
   flex: 0 0 auto;
-  width: 38px;
+  padding: 0 14px;
   border: 0;
   border-left: 1px solid var(--auditsante-border);
   background: transparent;
-  color: var(--auditsante-muted);
+  color: var(--auditsante-accent);
   font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
   cursor: pointer;
   transition: background 0.18s var(--auditsante-ease), color 0.18s var(--auditsante-ease);
 }
@@ -1393,4 +1395,40 @@ a.auditsante-item:hover .auditsante-item-open {
   display: block;
   margin-top: 6px;
   color: var(--auditsante-muted);
+}
+/* Retrait d'une référence introuvable : vrai bouton, rouge, avec son libellé (correction proposée) */
+.auditsante-item-repair {
+  flex: 0 0 auto;
+  align-self: center;
+  margin-left: 8px;
+  padding: 6px 12px;
+  border: 1px solid color-mix(in srgb, var(--auditsante-fail) 45%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--auditsante-fail) 10%, transparent);
+  color: var(--auditsante-fail);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.18s var(--auditsante-ease), color 0.18s var(--auditsante-ease);
+}
+.auditsante-item-repair:hover,
+.auditsante-item-repair:focus-visible {
+  background: var(--auditsante-fail);
+  color: #fff;
+}
+/* « Exclure » et « Réintégrer » : bouton bleu clair, bien visible à droite de l'élément */
+.auditsante-item-row > .auditsante-item-excludable {
+  align-self: center;
+  margin-left: 8px;
+  padding: 6px 12px;
+  border: 1px solid #7cc4f4;
+  border-radius: 8px;
+  background: #e3f2fd;
+  color: #1565c0;
+}
+.auditsante-item-row > .auditsante-item-excludable:hover,
+.auditsante-item-row > .auditsante-item-excludable:focus-visible {
+  background: #7cc4f4;
+  color: #0d3c78;
 }

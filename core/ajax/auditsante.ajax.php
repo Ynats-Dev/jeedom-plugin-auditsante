@@ -100,6 +100,13 @@ try {
     ajax::success($result);
   }
 
+  // Retire une référence introuvable d'une commande ou d'un équipement (action orpheline), puis revérifie le contrôle
+  if (init('action') == 'repairRef') {
+    $result = auditsante::repairRef(init('id'), init('key'));
+    $result['report'] = auditsante::getFullReport($result['report']);
+    ajax::success($result);
+  }
+
   // Utilisateur connecté, conservé avec les commentaires et les contrôles ignorés
   $login = (isset($_SESSION['user']) && is_object($_SESSION['user'])) ? $_SESSION['user']->getLogin() : '';
 

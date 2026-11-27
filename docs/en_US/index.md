@@ -42,7 +42,7 @@ The report shows:
 
 ## What the plugin checks
 
-The plugin reads the whole installation once (objects, devices, commands, scenarios and all their blocks, interactions, views, designs, 3D designs, summaries, configuration, users) and builds the « who uses what » index. It recognizes the references `#1234#` (command), `#eqLogic12#` (device), `#scenario5#` and `scenario_id` (scenario), as well as the items placed in views and designs.
+The plugin reads the whole installation once (objects, devices, commands, scenarios and all their blocks, interactions, views, designs, 3D designs, summaries, configuration, users) and builds the « who uses what » index. It recognizes the references `#1234#` (command), `#eqLogic12#` (device), `#scenario5#` and `scenario_id` (scenario), as well as the items placed in views and designs. A number greater than the last identifier assigned by Jeedom is not reported as missing: it never designated an item (Telegram chat ID, phone number written between hashes...).
 
 ### Broken references
 
@@ -72,7 +72,7 @@ The plugin reads the whole installation once (objects, devices, commands, scenar
 
 | Check | Importance | What is looked for | Auto fix |
 |---|---|---|---|
-| Ghost devices (plugin removed or disabled) | High | When a plugin is removed or disabled, its devices remain in the database: they no longer appear anywhere, but the scenarios, views and designs that use them no longer work. |  |
+| Ghost devices (plugin removed or disabled) | High | When a plugin is removed or disabled, its devices remain in the database: they no longer appear anywhere, but the scenarios, views and designs that use them no longer work. | Yes |
 | Devices in timeout | Medium | These devices have not communicated within the configured alert delay: empty battery, module out of range, device unplugged... |  |
 | Low batteries | Medium | The battery level of these devices is below the alert threshold (Settings > System > Configuration > Devices, or device-specific threshold). |  |
 | Silent devices | Low | Active devices whose info commands have not received any value for a long time, and with no alert delay (timeout) configured: Jeedom never reports them. They are often dead modules or removed from the house. |  |
@@ -148,13 +148,15 @@ A **Nothing to report** check earns all its points, a **To check** check half, a
 Depending on the check, the detail offers:
 
 - a **link** on each listed item (scenario, device, view...), which opens its page in Jeedom;
-- an **automatic fix** button (magic wand icon) only for risk-free cases: deleting what nothing can use anymore (commands without a device, history of deleted commands, logs of deleted scenarios, tasks and listeners of a removed plugin, variables of deleted items). A window explains what will be deleted before anything happens. Make a backup first;
+- an **automatic fix** button (magic wand icon) only for risk-free cases: deleting what nothing can use anymore (commands without a device, history of deleted commands, logs of deleted scenarios, tasks and listeners of a removed plugin, variables of deleted items, devices of a plugin that is no longer installed). A window explains what will be deleted before anything happens. Make a backup first;
 - **Check again**, to rerun only this check after a manual fix;
 - **Ignore**, if the situation is intended (a backup device kept disabled, a scenario run by the API...). The check leaves the score and stays visible in the **Ignored** filter. Choose a duration (7 days, 30 days, 3 months, 1 year or no limit): when it ends, the check counts again and a Jeedom message warns you. You can note the reason;
-- **Exclude an item** (crossed-out eye icon to the right of its name, for unused variables), when you know it is used although the audit does not see it (variable read by an external program, name built in a way the audit does not recognize). The check is run again right away: the item leaves the list and the count, and moves to the **Excluded from the audit** list, where one click brings it back. Unlike **Ignore**, the rest of the check still counts in the score;
+- **Exclude an item** (**Exclude** button to the right of its name, for unused variables), when you know it is used although the audit does not see it (variable read by an external program, name built in a way the audit does not recognize). The check is run again right away: the item leaves the list and the count, and moves to the **Excluded from the audit** list, where one click brings it back. Unlike **Ignore**, the rest of the check still counts in the score;
+- **Exclude a scenario or device** (button to the right of the item, for scenarios that can never run, that no longer run, that use disabled items or that are triggered by a disabled device, forgotten disabled scenarios, disabled, silent, orphan or timed-out devices, disabled plugins, empty objects and empty views and designs): the situation is deliberate (scenario run by a URL or the API, intrusion alarm that only triggers in case of burglary, device disabled and re-enabled by certain events...). The item stays listed under **Excluded from the audit**, but no longer counts in the score; if all the items of the check are intended, it turns green. The **Restore** button undoes this choice;
+- **Remove a missing reference** (red **Delete the orphan info value** or **Delete the orphan reference** button, to the right of a command or device linked to a deleted item): the action that uses the deleted item (action before or after execution, action on value...) is removed, or the setting that contains only it is cleared, then the item is saved by Jeedom. The previous configuration is written to the plugin log. A reference inside a formula is left untouched: clicking the command opens its advanced configuration, and the indicated location tells you where to fix it;
 - **Comment**, to keep a note on the check.
 
-The plugin never deletes a scenario, a device or a command that still has a device: those decisions are yours.
+The plugin never deletes a scenario, a device whose plugin is still installed (even disabled), or a command that still has a device: those decisions are yours.
 
 ## Finding the name of a deleted item
 
@@ -248,6 +250,9 @@ No. Only the automatic fix buttons change the database, and always after confirm
 
 **Why is a device I use reported as an orphan?**
 It is hidden, none of its commands is historized, and the plugin finds no reference to it (see the limits above). Ignore the check or make the device visible.
+
+**A missing reference is reported in a scenario, but I cannot see it in the editor**
+Each line tells where the reference is: trigger, condition or action of a block (IF, THEN, ELSE...), and "in its options" when it is not the action's command but one of its fields (message, title...). Triggers of a scenario in **Scheduled** mode are not checked: Jeedom keeps them in the database but hides them and does not use them.
 
 **Reporting a problem**
 Set the plugin log to Debug, run the audit again, then click **Diagnostic** on the plugin page and attach the file to your message on the forum (public addresses, accounts and e-mails are masked in it).

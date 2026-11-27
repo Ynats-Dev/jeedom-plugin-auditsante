@@ -84,7 +84,7 @@ class auditsanteChecks {
         'severity' => 'high',
         'title' => __('Équipements et commandes liés à des éléments supprimés', __FILE__),
         'description' => __('Virtuels, actions sur valeur, pré et post exécution, commandes liées (état d\'un interrupteur...) : un équipement ou une commande qui pointe vers une commande supprimée ne fonctionne plus correctement.', __FILE__),
-        'recommendation' => __('Ouvrez l\'équipement listé et remplacez la commande introuvable dans sa configuration ou dans la configuration avancée de la commande.', __FILE__),
+        'recommendation' => __('Cliquez sur l\'élément pour ouvrir l\'équipement ou la configuration avancée de la commande, à l\'emplacement indiqué, et remplacez la référence introuvable. Si elle ne sert plus, le bouton rouge « Supprimer… orpheline » retire l\'action qui l\'utilise (ou vide le paramètre) et enregistre via Jeedom.', __FILE__),
         'fix' => null,
       ),
       'broken_interface' => array(
@@ -126,40 +126,50 @@ class auditsanteChecks {
         'severity' => 'high',
         'title' => __('Scénarios déclenchés par un équipement désactivé', __FILE__),
         'description' => __('Un équipement désactivé ne remonte plus aucune valeur : les scénarios qu\'il déclenche ne se lancent plus. Jeedom ne le signale nulle part.', __FILE__),
-        'recommendation' => __('Réactivez l\'équipement, remplacez le déclencheur par une commande d\'un équipement actif, ou désactivez le scénario s\'il n\'a plus d\'utilité.', __FILE__),
+        'recommendation' => __('Réactivez l\'équipement, remplacez le déclencheur par une commande d\'un équipement actif, ou désactivez le scénario s\'il n\'a plus d\'utilité. Si l\'équipement est désactivé volontairement (il se réactive selon certains événements), cliquez sur « Exclure ».', __FILE__),
         'fix' => $linkScenarios,
+        // Éléments que l'utilisateur peut marquer comme voulus : affichés à part, plus comptés dans la note
+        'exclude' => 'voluntary',
       ),
       'scenario_unreachable' => array(
         'category' => 'scenarios',
         'severity' => 'medium',
         'title' => __('Scénarios actifs qui ne peuvent jamais se lancer', __FILE__),
         'description' => __('Ces scénarios sont actifs mais n\'ont ni déclencheur ni programmation, ne sont appelés par aucun autre scénario, équipement, interaction, vue ou design, et ne sont pas affichés sur le dashboard. Ils ne se lancent donc jamais, sauf à la main ou par l\'API.', __FILE__),
-        'recommendation' => __('Ajoutez le déclencheur ou la programmation manquante, ou supprimez le scénario s\'il ne sert plus. S\'il est lancé par l\'API ou un programme externe, ignorez ce contrôle.', __FILE__),
+        'recommendation' => __('Ajoutez le déclencheur ou la programmation manquante, ou supprimez le scénario s\'il ne sert plus. S\'il est lancé par une URL, l\'API ou un autre appareil, cliquez sur « Exclure » : il reste affiché mais ne compte plus dans la note.', __FILE__),
         'fix' => $linkScenarios,
+        // Éléments que l'utilisateur peut marquer comme voulus : affichés à part, plus comptés dans la note
+        'exclude' => 'voluntary',
       ),
       'scenario_disabled_refs' => array(
         'category' => 'scenarios',
         'severity' => 'medium',
         'title' => __('Scénarios qui utilisent des éléments désactivés', __FILE__),
         'description' => __('Ces scénarios actifs lisent ou pilotent la commande d\'un équipement désactivé, ou lancent un scénario désactivé : ces actions n\'ont aucun effet et les conditions lisent une valeur figée.', __FILE__),
-        'recommendation' => __('Réactivez l\'élément concerné ou retirez-le du scénario.', __FILE__),
+        'recommendation' => __('Réactivez l\'élément concerné ou retirez-le du scénario. Si l\'élément est désactivé volontairement (il se réactive selon certains événements), cliquez sur « Exclure ».', __FILE__),
         'fix' => $linkScenarios,
+        // Éléments que l'utilisateur peut marquer comme voulus : affichés à part, plus comptés dans la note
+        'exclude' => 'voluntary',
       ),
       'scenario_stale' => array(
         'category' => 'scenarios',
         'severity' => 'low',
         'title' => __('Scénarios qui ne se lancent plus', __FILE__),
         'description' => __('Ces scénarios actifs ont un déclencheur ou une programmation, mais ne se sont pas lancés depuis longtemps (ou jamais). La condition de déclenchement n\'arrive peut-être plus : capteur remplacé, mode supprimé...', __FILE__),
-        'recommendation' => __('Vérifiez le déclencheur de chaque scénario listé. S\'il ne sert plus, désactivez-le ou supprimez-le. Le délai se règle dans la configuration du plugin.', __FILE__),
+        'recommendation' => __('Vérifiez le déclencheur de chaque scénario listé. S\'il ne sert plus, désactivez-le ou supprimez-le. Le délai se règle dans la configuration du plugin. Un scénario qui ne se lance que rarement par nature (alarme intrusion, détection de fuite...) : cliquez sur « Exclure ».', __FILE__),
         'fix' => $linkPluginConfig,
+        // Éléments que l'utilisateur peut marquer comme voulus : affichés à part, plus comptés dans la note
+        'exclude' => 'voluntary',
       ),
       'scenario_inactive' => array(
         'category' => 'scenarios',
         'severity' => 'low',
         'title' => __('Scénarios désactivés oubliés', __FILE__),
         'description' => __('Scénarios désactivés et qu\'aucun autre élément n\'active ni ne lance. Ils encombrent la liste et peuvent être réactivés par erreur.', __FILE__),
-        'recommendation' => __('Supprimez ceux qui ne servent plus (exportez-les avant si vous voulez les garder). Ceux qui sont activés par un autre scénario ne sont pas listés.', __FILE__),
+        'recommendation' => __('Supprimez ceux qui ne servent plus (exportez-les avant si vous voulez les garder). Ceux qui sont activés par un autre scénario ne sont pas listés. Ceux que vous gardez désactivés volontairement : cliquez sur « Exclure ».', __FILE__),
         'fix' => $linkScenarios,
+        // Éléments que l'utilisateur peut marquer comme voulus : affichés à part, plus comptés dans la note
+        'exclude' => 'voluntary',
       ),
       'scenario_empty' => array(
         'category' => 'scenarios',
@@ -192,16 +202,18 @@ class auditsanteChecks {
         'severity' => 'high',
         'title' => __('Équipements fantômes (plugin supprimé ou désactivé)', __FILE__),
         'description' => __('Quand un plugin est supprimé ou désactivé, ses équipements restent dans la base : ils n\'apparaissent plus nulle part, mais les scénarios, vues et designs qui les utilisent ne fonctionnent plus.', __FILE__),
-        'recommendation' => __('Réinstallez ou réactivez le plugin si vous en avez encore besoin. Sinon, remplacez ces équipements dans vos scénarios puis supprimez-les (réactivez temporairement le plugin pour pouvoir le faire depuis son interface).', __FILE__),
-        'fix' => $linkPlugins,
+        'recommendation' => __('Réinstallez ou réactivez le plugin si vous en avez encore besoin. Sinon, remplacez ces équipements dans vos scénarios puis supprimez-les. Les équipements d\'un plugin qui n\'est plus installé peuvent être supprimés automatiquement ; pour un plugin désactivé, réactivez-le temporairement et supprimez-les depuis son interface.', __FILE__),
+        'fix' => array('type' => 'auto', 'label' => __('Supprimer les équipements des plugins non installés', __FILE__), 'confirm' => __('Les équipements des plugins qui ne sont plus installés vont être supprimés définitivement, avec leurs commandes et leur historique. Ceux des plugins désactivés ne sont pas touchés. Les scénarios, vues et designs qui les utilisaient encore afficheront une référence introuvable, avec l\'ancien nom de l\'équipement.', __FILE__)),
       ),
       'eq_timeout' => array(
         'category' => 'equipments',
         'severity' => 'medium',
         'title' => __('Équipements en timeout', __FILE__),
         'description' => __('Ces équipements n\'ont pas communiqué dans le délai d\'alerte configuré : pile vide, module hors de portée, appareil débranché...', __FILE__),
-        'recommendation' => __('Vérifiez l\'alimentation et la portée de l\'appareil. S\'il a été retiré de la maison, supprimez son équipement.', __FILE__),
+        'recommendation' => __('Vérifiez l\'alimentation et la portée de l\'appareil. S\'il a été retiré de la maison, supprimez son équipement. S\'il est débranché volontairement (appareil saisonnier : piscine, chauffage...), cliquez sur « Exclure ».', __FILE__),
         'fix' => $linkEqAnalysis,
+        // Éléments que l'utilisateur peut marquer comme voulus : affichés à part, plus comptés dans la note
+        'exclude' => 'voluntary',
       ),
       'eq_battery' => array(
         'category' => 'equipments',
@@ -216,24 +228,30 @@ class auditsanteChecks {
         'severity' => 'low',
         'title' => __('Équipements muets', __FILE__),
         'description' => __('Équipements actifs dont aucune commande info n\'a reçu de valeur depuis longtemps, et sans délai d\'alerte (timeout) configuré : Jeedom ne les signale donc jamais. Ce sont souvent des modules morts ou retirés de la maison.', __FILE__),
-        'recommendation' => __('Vérifiez chaque équipement. S\'il fonctionne, configurez un délai d\'alerte dans sa configuration avancée ; sinon, désactivez-le ou supprimez-le. Le délai se règle dans la configuration du plugin.', __FILE__),
+        'recommendation' => __('Vérifiez chaque équipement. S\'il fonctionne, configurez un délai d\'alerte dans sa configuration avancée ; sinon, désactivez-le ou supprimez-le. Le délai se règle dans la configuration du plugin. Un capteur qui change rarement par nature (porte de cave, détecteur de fuite, bouton d\'urgence...) : cliquez sur « Exclure ».', __FILE__),
         'fix' => $linkPluginConfig,
+        // Éléments que l'utilisateur peut marquer comme voulus : affichés à part, plus comptés dans la note
+        'exclude' => 'voluntary',
       ),
       'eq_unused' => array(
         'category' => 'equipments',
         'severity' => 'low',
         'title' => __('Équipements orphelins', __FILE__),
         'description' => __('Équipements actifs mais masqués, dont aucune commande n\'est historisée ni utilisée ailleurs (scénario, autre équipement, interaction, vue, design, résumé). Ils ne servent visiblement à rien. Les commandes utilisées seulement dans un bloc code d\'un scénario, par leur nom, ne sont pas détectées.', __FILE__),
-        'recommendation' => __('Supprimez ou désactivez les équipements dont vous n\'avez plus besoin.', __FILE__),
+        'recommendation' => __('Supprimez ou désactivez les équipements dont vous n\'avez plus besoin. S\'il est lu par un programme externe, l\'API ou un autre Jeedom, cliquez sur « Exclure ».', __FILE__),
         'fix' => null,
+        // Éléments que l'utilisateur peut marquer comme voulus : affichés à part, plus comptés dans la note
+        'exclude' => 'voluntary',
       ),
       'eq_disabled' => array(
         'category' => 'equipments',
         'severity' => 'low',
         'title' => __('Équipements désactivés', __FILE__),
         'description' => __('Un équipement désactivé ne remonte plus rien mais garde ses commandes, son historique et ses liens. Souvent, il correspond à un appareil qui n\'existe plus.', __FILE__),
-        'recommendation' => __('Supprimez les équipements qui ne reviendront pas. Ceux qui sont encore utilisés par des scénarios sont signalés dans « Scénarios qui utilisent des éléments désactivés ».', __FILE__),
+        'recommendation' => __('Supprimez les équipements qui ne reviendront pas. Ceux qui sont encore utilisés par des scénarios sont signalés dans « Scénarios qui utilisent des éléments désactivés ». Ceux que vous gardez désactivés volontairement : cliquez sur « Exclure ».', __FILE__),
         'fix' => null,
+        // Éléments que l'utilisateur peut marquer comme voulus : affichés à part, plus comptés dans la note
+        'exclude' => 'voluntary',
       ),
       'eq_no_object' => array(
         'category' => 'equipments',
@@ -300,16 +318,20 @@ class auditsanteChecks {
         'severity' => 'low',
         'title' => __('Objets vides', __FILE__),
         'description' => __('Objets (pièces) sans équipement, sans objet enfant et sans résumé : ils encombrent le dashboard et les listes de choix.', __FILE__),
-        'recommendation' => __('Supprimez-les ou rangez-y les équipements concernés.', __FILE__),
+        'recommendation' => __('Supprimez-les ou rangez-y les équipements concernés. Un objet préparé à l\'avance ou qui ne sert qu\'à regrouper : cliquez sur « Exclure ».', __FILE__),
         'fix' => $linkObjects,
+        // Éléments que l'utilisateur peut marquer comme voulus : affichés à part, plus comptés dans la note
+        'exclude' => 'voluntary',
       ),
       'view_empty' => array(
         'category' => 'interface',
         'severity' => 'low',
         'title' => __('Vues et designs vides', __FILE__),
         'description' => __('Vues sans aucun élément et designs sans aucun élément posé : création inachevée ou reste d\'une ancienne organisation.', __FILE__),
-        'recommendation' => __('Complétez-les ou supprimez-les.', __FILE__),
+        'recommendation' => __('Complétez-les ou supprimez-les. Une vue ou un design préparé à l\'avance : cliquez sur « Exclure ».', __FILE__),
         'fix' => null,
+        // Éléments que l'utilisateur peut marquer comme voulus : affichés à part, plus comptés dans la note
+        'exclude' => 'voluntary',
       ),
       'widget_unused' => array(
         'category' => 'interface',
@@ -350,8 +372,10 @@ class auditsanteChecks {
         'severity' => 'low',
         'title' => __('Plugins désactivés', __FILE__),
         'description' => __('Un plugin désactivé reste installé : il occupe de la place, apparaît dans le centre de mises à jour et ses équipements deviennent des fantômes.', __FILE__),
-        'recommendation' => __('Supprimez les plugins dont vous ne vous servez plus, après avoir supprimé leurs équipements.', __FILE__),
+        'recommendation' => __('Supprimez les plugins dont vous ne vous servez plus, après avoir supprimé leurs équipements. Ceux que vous gardez désactivés volontairement (plugin saisonnier, en attente de réutilisation...) : cliquez sur « Exclure ».', __FILE__),
         'fix' => $linkPlugins,
+        // Éléments que l'utilisateur peut marquer comme voulus : affichés à part, plus comptés dans la note
+        'exclude' => 'voluntary',
       ),
       'plugin_no_eq' => array(
         'category' => 'plugins',
@@ -609,14 +633,123 @@ class auditsanteChecks {
       $owners[$dead['consumer']] = true;
       $active = $active || $consumer['active'];
       $refs[$dead['type'] . ':' . $dead['id']] = array($dead['type'], $dead['id']);
-      $items[] = self::item(self::consumerName($consumer) . ($consumer['active'] ? '' : ' (' . __('désactivé', __FILE__) . ')')
-        . ' : ' . self::deadLabel($dead['type'], $dead['id']), $consumer['url']);
+      $place = '';
+      $url = $consumer['url'];
+      $repairable = false;
+      if ($consumer['kind'] == 'scenario') {
+        $place = auditsanteIndex::scenarioRefPlace($consumer['id'], $dead['type'], $dead['id']);
+      } elseif (in_array($consumer['kind'], self::REPAIR_KINDS)) {
+        $place = auditsanteIndex::configRefPlace($consumer['kind'], $consumer['id'], $dead['type'], $dead['id']);
+        // Configuration avancée de la commande : c'est là que se trouvent les actions avant/après exécution
+        if ($consumer['kind'] == 'cmd') {
+          $url = 'index.php?v=d&modal=cmd.configure&cmd_id=' . $consumer['id'];
+        }
+        $repairable = self::repairDeadRef($consumer['kind'], $consumer['id'], $dead['type'], $dead['id'], true) > 0;
+      }
+      $item = self::item(self::consumerName($consumer) . ($consumer['active'] ? '' : ' (' . __('désactivé', __FILE__) . ')')
+        . ' : ' . self::deadLabel($dead['type'], $dead['id'])
+        . ($place === '' ? '' : ' - ' . sprintf(__('emplacement : %s', __FILE__), $place)), $url);
+      if ($repairable) {
+        $item['repair'] = $dead['consumer'] . '|' . $dead['type'] . '|' . $dead['id'];
+        $cmds = auditsanteIndex::cmds();
+        $isInfo = ($consumer['kind'] == 'cmd') && isset($cmds[$consumer['id']]) && $cmds[$consumer['id']]['type'] == 'info';
+        $item['repairLabel'] = $isInfo ? __('Supprimer la valeur info orpheline', __FILE__) : __('Supprimer la référence orpheline', __FILE__);
+      }
+      $items[] = $item;
     }
     if (count($items) == 0) {
       return self::pass(__('Aucune référence cassée.', __FILE__));
     }
     $detail = sprintf(__('%d référence(s) introuvable(s) dans %d élément(s).', __FILE__), count($items), count($owners));
     return self::withUnnamed(($active && $_failIfActive) ? self::fail($detail, $items) : self::warn($detail, $items), $refs);
+  }
+
+  /** Consommateurs dont une référence introuvable peut être retirée automatiquement. */
+  const REPAIR_KINDS = array('cmd', 'eqLogic');
+
+  /**
+   * Retire une référence introuvable de la configuration d'une commande ou d'un équipement :
+   * - dans une liste d'actions (avant/après exécution, actions sur valeur...), l'action qui l'utilise est supprimée ;
+   * - un paramètre qui ne contient que cette référence est vidé (de même pour la valeur liée d'une commande).
+   * Une référence prise dans une formule plus longue n'est pas touchée : elle reste à corriger à la main.
+   * $_dryRun : compte seulement ce qui serait retiré. Retourne le nombre d'éléments retirés.
+   */
+  public static function repairDeadRef($_kind, $_id, $_type, $_refId, $_dryRun = false) {
+    if (!in_array($_kind, self::REPAIR_KINDS) || !in_array($_type, array('cmd', 'eqLogic', 'scenario'))) {
+      return 0;
+    }
+    if ($_dryRun) {
+      $index = ($_kind == 'cmd') ? auditsanteIndex::cmds() : auditsanteIndex::eqLogics();
+      if (!isset($index[$_id])) {
+        return 0;
+      }
+      $configuration = json_decode((string) $index[$_id]['configuration'], true);
+      $value = ($_kind == 'cmd') ? (string) $index[$_id]['value'] : '';
+    } else {
+      $object = ($_kind == 'cmd') ? cmd::byId($_id) : eqLogic::byId($_id);
+      if (!is_object($object)) {
+        throw new Exception(__('Élément introuvable', __FILE__) . ' : ' . $_kind . ' ' . $_id);
+      }
+      $configuration = $object->getConfiguration();
+      $value = ($_kind == 'cmd') ? (string) $object->getValue() : '';
+    }
+    $removed = 0;
+    $changed = array();
+    if (is_array($configuration)) {
+      foreach ($configuration as $key => $param) {
+        $count = 0;
+        $clean = self::stripRef($param, $_type, $_refId, $count);
+        if ($count > 0) {
+          $removed += $count;
+          $changed[$key] = $clean;
+        }
+      }
+    }
+    $clearValue = ($_kind == 'cmd') && (($_type == 'cmd' && trim($value) === (string) $_refId) || self::isOnlyRef($value, $_type, $_refId));
+    if ($clearValue) {
+      $removed++;
+    }
+    if ($_dryRun || $removed == 0) {
+      return $removed;
+    }
+    log::add('auditsante', 'info', sprintf('Retrait de la référence %s %d dans %s %d. Avant : configuration %s, valeur « %s »',
+      $_type, $_refId, $_kind, $_id, json_encode(array_intersect_key($configuration, $changed)), $value));
+    foreach ($changed as $key => $clean) {
+      $object->setConfiguration($key, $clean);
+    }
+    if ($clearValue) {
+      $object->setValue('');
+    }
+    $object->save();
+    return $removed;
+  }
+
+  /** Vrai si un texte ne contient que la référence (#123#, #eqLogic123#, #scenario123#). */
+  private static function isOnlyRef($_text, $_type, $_refId) {
+    $prefix = array('cmd' => '', 'eqLogic' => 'eqLogic', 'scenario' => 'scenario');
+    return trim((string) $_text) === '#' . $prefix[$_type] . (int) $_refId . '#';
+  }
+
+  /** Retire la référence d'une valeur de configuration (voir repairDeadRef) ; $_count reçoit le nombre de retraits. */
+  private static function stripRef($_value, $_type, $_refId, &$_count) {
+    if (!is_array($_value)) {
+      if (is_string($_value) && self::isOnlyRef($_value, $_type, $_refId)) {
+        $_count++;
+        return '';
+      }
+      return $_value;
+    }
+    $isList = array_keys($_value) === range(0, count($_value) - 1);
+    $return = array();
+    foreach ($_value as $key => $element) {
+      // Liste d'actions : l'action entière (commande + options) part avec la référence
+      if ($isList && is_array($element) && isset($element['cmd']) && auditsanteIndex::hasRef($element, $_type, $_refId)) {
+        $_count++;
+        continue;
+      }
+      $return[$key] = self::stripRef($element, $_type, $_refId, $_count);
+    }
+    return $isList ? array_values($return) : $return;
   }
 
   /** Statut décodé d'un équipement (colonne status, JSON). */
@@ -682,6 +815,8 @@ class auditsanteChecks {
   private static function check_scenario_dead_triggers() {
     $cmds = auditsanteIndex::cmds();
     $eqLogics = auditsanteIndex::eqLogics();
+    $keys = self::excludedKeys('scenario_dead_triggers');
+    $voluntary = array();
     $items = array();
     $blocked = 0;
     foreach (auditsanteIndex::scenarios() as $id => $scenario) {
@@ -711,20 +846,26 @@ class auditsanteChecks {
         continue;
       }
       $never = ($valid == 0 && !($scenario->getMode() == 'all' && count(auditsanteIndex::scenarioSchedules($scenario)) > 0));
+      $item = self::item(auditsanteIndex::scenarioName($id) . ' : ' . implode(', ', $disabled)
+        . ($never ? ' - ' . __('ne peut plus se déclencher', __FILE__) : ''), auditsanteIndex::scenarioUrl($id));
+      if (self::isVoluntary($item, 'scenario:' . $id, $keys, $voluntary)) {
+        continue;
+      }
       if ($never) {
         $blocked++;
       }
-      $items[] = self::item(auditsanteIndex::scenarioName($id) . ' : ' . implode(', ', $disabled)
-        . ($never ? ' - ' . __('ne peut plus se déclencher', __FILE__) : ''), auditsanteIndex::scenarioUrl($id));
+      $items[] = $item;
     }
     if (count($items) == 0) {
-      return self::pass(__('Aucun déclencheur sur un équipement désactivé.', __FILE__));
+      return self::withVoluntary(self::pass(__('Aucun déclencheur sur un équipement désactivé.', __FILE__)), $voluntary);
     }
     $detail = sprintf(__('%d scénario(s) concerné(s), dont %d qui ne peuvent plus se déclencher.', __FILE__), count($items), $blocked);
-    return ($blocked > 0) ? self::fail($detail, $items) : self::warn($detail, $items);
+    return self::withVoluntary(($blocked > 0) ? self::fail($detail, $items) : self::warn($detail, $items), $voluntary);
   }
 
   private static function check_scenario_unreachable() {
+    $keys = self::excludedKeys('scenario_unreachable');
+    $voluntary = array();
     $items = array();
     foreach (auditsanteIndex::scenarios() as $id => $scenario) {
       if ($scenario->getIsActive() != 1 || auditsanteIndex::scenarioHasAutoStart($scenario)) {
@@ -737,12 +878,15 @@ class auditsanteChecks {
       if (count(auditsanteIndex::usersOf('scenario', $id)) > 0) {
         continue;
       }
-      $items[] = self::item(auditsanteIndex::scenarioName($id) . ' : ' . self::lastLaunch($scenario), auditsanteIndex::scenarioUrl($id));
+      $item = self::item(auditsanteIndex::scenarioName($id) . ' : ' . self::lastLaunch($scenario), auditsanteIndex::scenarioUrl($id));
+      if (!self::isVoluntary($item, 'scenario:' . $id, $keys, $voluntary)) {
+        $items[] = $item;
+      }
     }
     if (count($items) == 0) {
-      return self::pass(__('Tous les scénarios actifs ont un moyen de se lancer.', __FILE__));
+      return self::withVoluntary(self::pass(__('Tous les scénarios actifs ont un moyen de se lancer.', __FILE__)), $voluntary);
     }
-    return self::warn(sprintf(__('%d scénario(s) actif(s) sans aucun moyen de se lancer.', __FILE__), count($items)), $items);
+    return self::withVoluntary(self::warn(sprintf(__('%d scénario(s) actif(s) sans aucun moyen de se lancer.', __FILE__), count($items)), $items), $voluntary);
   }
 
   private static function check_scenario_disabled_refs() {
@@ -750,6 +894,8 @@ class auditsanteChecks {
     $cmds = auditsanteIndex::cmds();
     $eqLogics = auditsanteIndex::eqLogics();
     $scenarios = auditsanteIndex::scenarios();
+    $keys = self::excludedKeys('scenario_disabled_refs');
+    $voluntary = array();
     $items = array();
     foreach ($scenarios as $id => $scenario) {
       if ($scenario->getIsActive() != 1 || !isset($consumers['scenario:' . $id])) {
@@ -778,18 +924,24 @@ class auditsanteChecks {
           $found[] = __('scénario', __FILE__) . ' ' . auditsanteIndex::scenarioName($scenarioId);
         }
       }
-      if (count($found) > 0) {
-        $items[] = self::item(auditsanteIndex::scenarioName($id) . ' : ' . implode(', ', array_unique($found)), auditsanteIndex::scenarioUrl($id));
+      if (count($found) == 0) {
+        continue;
+      }
+      $item = self::item(auditsanteIndex::scenarioName($id) . ' : ' . implode(', ', array_unique($found)), auditsanteIndex::scenarioUrl($id));
+      if (!self::isVoluntary($item, 'scenario:' . $id, $keys, $voluntary)) {
+        $items[] = $item;
       }
     }
     if (count($items) == 0) {
-      return self::pass(__('Aucun scénario actif n\'utilise d\'élément désactivé.', __FILE__));
+      return self::withVoluntary(self::pass(__('Aucun scénario actif n\'utilise d\'élément désactivé.', __FILE__)), $voluntary);
     }
-    return self::warn(sprintf(__('%d scénario(s) actif(s) utilisent des éléments désactivés.', __FILE__), count($items)), $items);
+    return self::withVoluntary(self::warn(sprintf(__('%d scénario(s) actif(s) utilisent des éléments désactivés.', __FILE__), count($items)), $items), $voluntary);
   }
 
   private static function check_scenario_stale() {
     $days = self::setting('staleDays', 180);
+    $keys = self::excludedKeys('scenario_stale');
+    $voluntary = array();
     $items = array();
     foreach (auditsanteIndex::scenarios() as $id => $scenario) {
       if ($scenario->getIsActive() != 1 || !auditsanteIndex::scenarioHasAutoStart($scenario)) {
@@ -799,28 +951,36 @@ class auditsanteChecks {
       if ($since !== null && $since < $days) {
         continue;
       }
-      $items[] = self::item(auditsanteIndex::scenarioName($id) . ' : ' . ($since === null
+      $item = self::item(auditsanteIndex::scenarioName($id) . ' : ' . ($since === null
         ? __('jamais lancé', __FILE__)
         : sprintf(__('dernier lancement le %s (il y a %d jours)', __FILE__), auditsanteTools::formatDay($scenario->getLastLaunch()), $since)), auditsanteIndex::scenarioUrl($id));
+      if (!self::isVoluntary($item, 'scenario:' . $id, $keys, $voluntary)) {
+        $items[] = $item;
+      }
     }
     if (count($items) == 0) {
-      return self::pass(sprintf(__('Tous les scénarios actifs se sont lancés depuis moins de %d jours.', __FILE__), $days));
+      return self::withVoluntary(self::pass(sprintf(__('Tous les scénarios actifs se sont lancés depuis moins de %d jours.', __FILE__), $days)), $voluntary);
     }
-    return self::warn(sprintf(__('%d scénario(s) actif(s) non lancé(s) depuis plus de %d jours.', __FILE__), count($items), $days), $items);
+    return self::withVoluntary(self::warn(sprintf(__('%d scénario(s) actif(s) non lancé(s) depuis plus de %d jours.', __FILE__), count($items), $days), $items), $voluntary);
   }
 
   private static function check_scenario_inactive() {
+    $keys = self::excludedKeys('scenario_inactive');
+    $voluntary = array();
     $items = array();
     foreach (auditsanteIndex::scenarios() as $id => $scenario) {
       if ($scenario->getIsActive() == 1 || count(auditsanteIndex::usersOf('scenario', $id)) > 0) {
         continue;
       }
-      $items[] = self::item(auditsanteIndex::scenarioName($id) . ' : ' . self::lastLaunch($scenario), auditsanteIndex::scenarioUrl($id));
+      $item = self::item(auditsanteIndex::scenarioName($id) . ' : ' . self::lastLaunch($scenario), auditsanteIndex::scenarioUrl($id));
+      if (!self::isVoluntary($item, 'scenario:' . $id, $keys, $voluntary)) {
+        $items[] = $item;
+      }
     }
     if (count($items) == 0) {
-      return self::pass(__('Aucun scénario désactivé oublié.', __FILE__));
+      return self::withVoluntary(self::pass(__('Aucun scénario désactivé oublié.', __FILE__)), $voluntary);
     }
-    return self::warn(sprintf(__('%d scénario(s) désactivé(s) que rien n\'utilise.', __FILE__), count($items)), $items);
+    return self::withVoluntary(self::warn(sprintf(__('%d scénario(s) désactivé(s) que rien n\'utilise.', __FILE__), count($items)), $items), $voluntary);
   }
 
   private static function check_scenario_empty() {
@@ -912,7 +1072,8 @@ class auditsanteChecks {
   /*                                   Équipements                                        */
   /* ************************************************************************************ */
 
-  private static function check_eq_plugin_missing() {
+  /** Équipements dont le plugin est désactivé ou non installé : {plugin => [eqLogic ids]} */
+  private static function ghostEqLogics() {
     $plugins = auditsanteIndex::plugins();
     $byPlugin = array();
     foreach (auditsanteIndex::eqLogics() as $id => $eqLogic) {
@@ -922,6 +1083,12 @@ class auditsanteChecks {
       }
       $byPlugin[$type][] = $id;
     }
+    return $byPlugin;
+  }
+
+  private static function check_eq_plugin_missing() {
+    $plugins = auditsanteIndex::plugins();
+    $byPlugin = self::ghostEqLogics();
     if (count($byPlugin) == 0) {
       return self::pass(__('Tous les équipements appartiennent à un plugin actif.', __FILE__));
     }
@@ -944,22 +1111,60 @@ class auditsanteChecks {
         . ' - ' . implode(', ', $names) . (count($ids) > 5 ? '...' : ''), $installed ? 'index.php?v=d&p=plugin&id=' . urlencode($type) : null);
     }
     $detail = sprintf(__('%d équipement(s) de %d plugin(s) supprimé(s) ou désactivé(s).', __FILE__), $total, count($byPlugin));
-    return $missing ? self::fail($detail, $items) : self::warn($detail, $items);
+    // Correction automatique réservée aux plugins non installés : un plugin désactivé peut être réactivé
+    return $missing ? self::fail($detail, $items) : self::noFix(self::warn($detail, $items));
+  }
+
+  private static function fix_eq_plugin_missing() {
+    $plugins = auditsanteIndex::plugins();
+    $count = 0;
+    $errors = 0;
+    foreach (self::ghostEqLogics() as $type => $ids) {
+      // Plugin installé (désactivé), ou classe chargée par un autre plugin : pas touché
+      if (isset($plugins[$type]) || $type == 'auditsante' || class_exists($type, false)) {
+        continue;
+      }
+      foreach ($ids as $id) {
+        $eqLogic = eqLogic::byId($id);
+        if (!is_object($eqLogic) || $eqLogic->getEqType_name() != $type) {
+          continue;
+        }
+        // Sans la classe du plugin, Jeedom charge un eqLogic de base : remove() supprime ses commandes,
+        // leur historique et leurs liens, et inscrit les noms dans l'historique des suppressions.
+        try {
+          $eqLogic->remove();
+          $count++;
+        } catch (Throwable $e) {
+          $errors++;
+          log::add('auditsante', 'error', 'Suppression de l\'équipement ' . $id . ' (' . $type . ') : ' . $e->getMessage());
+        }
+      }
+    }
+    $message = sprintf(__('%d équipement(s) supprimé(s) avec leurs commandes.', __FILE__), $count);
+    if ($errors > 0) {
+      $message .= ' ' . sprintf(__('%d échec(s), voir le log du plugin.', __FILE__), $errors);
+    }
+    return $message;
   }
 
   private static function check_eq_timeout() {
+    $keys = self::excludedKeys('eq_timeout');
+    $voluntary = array();
     $items = array();
     foreach (auditsanteIndex::eqLogics() as $id => $eqLogic) {
       if ($eqLogic['isEnable'] != 1 || self::eqStatus($eqLogic, 'timeout', 0) != 1) {
         continue;
       }
-      $items[] = self::item(auditsanteIndex::eqLogicName($id) . ' (' . $eqLogic['eqType_name'] . ') : '
+      $item = self::item(auditsanteIndex::eqLogicName($id) . ' (' . $eqLogic['eqType_name'] . ') : '
         . sprintf(__('dernière communication le %s', __FILE__), auditsanteTools::formatDay(self::eqStatus($eqLogic, 'lastCommunication', ''))), auditsanteIndex::eqLogicUrl($id));
+      if (!self::isVoluntary($item, 'eqLogic:' . $id, $keys, $voluntary)) {
+        $items[] = $item;
+      }
     }
     if (count($items) == 0) {
-      return self::pass(__('Aucun équipement en timeout.', __FILE__));
+      return self::withVoluntary(self::pass(__('Aucun équipement en timeout.', __FILE__)), $voluntary);
     }
-    return self::fail(sprintf(__('%d équipement(s) en timeout.', __FILE__), count($items)), $items);
+    return self::withVoluntary(self::fail(sprintf(__('%d équipement(s) en timeout.', __FILE__), count($items)), $items), $voluntary);
   }
 
   private static function check_eq_battery() {
@@ -1001,6 +1206,8 @@ class auditsanteChecks {
     $days = self::setting('silentDays', 30);
     $limit = time() - $days * 86400;
     $cmds = auditsanteIndex::cmds();
+    $keys = self::excludedKeys('eq_silent');
+    $voluntary = array();
     $items = array();
     $ages = array();
     foreach (auditsanteIndex::eqLogics() as $id => $eqLogic) {
@@ -1027,24 +1234,30 @@ class auditsanteChecks {
       if ($infos == 0 || $latest >= $limit) {
         continue;
       }
-      $ages[$id] = $latest;
-      $items[$id] = self::item(auditsanteIndex::eqLogicName($id) . ' (' . $eqLogic['eqType_name'] . ') : '
+      $item = self::item(auditsanteIndex::eqLogicName($id) . ' (' . $eqLogic['eqType_name'] . ') : '
         . ($latest == 0 ? __('aucune valeur reçue', __FILE__) : sprintf(__('dernière valeur le %s', __FILE__), date('d/m/Y', $latest))), auditsanteIndex::eqLogicUrl($id));
+      if (self::isVoluntary($item, 'eqLogic:' . $id, $keys, $voluntary)) {
+        continue;
+      }
+      $ages[$id] = $latest;
+      $items[$id] = $item;
     }
     if (count($items) == 0) {
-      return self::pass(sprintf(__('Tous les équipements actifs ont reçu une valeur depuis moins de %d jours.', __FILE__), $days));
+      return self::withVoluntary(self::pass(sprintf(__('Tous les équipements actifs ont reçu une valeur depuis moins de %d jours.', __FILE__), $days)), $voluntary);
     }
     asort($ages);
     $sorted = array();
     foreach (array_keys($ages) as $id) {
       $sorted[] = $items[$id];
     }
-    return self::warn(sprintf(__('%d équipement(s) sans valeur reçue depuis plus de %d jours.', __FILE__), count($items), $days), $sorted);
+    return self::withVoluntary(self::warn(sprintf(__('%d équipement(s) sans valeur reçue depuis plus de %d jours.', __FILE__), count($items), $days), $sorted), $voluntary);
   }
 
   private static function check_eq_unused() {
     $cmds = auditsanteIndex::cmds();
     $byEq = auditsanteIndex::cmdsByEqLogic();
+    $keys = self::excludedKeys('eq_unused');
+    $voluntary = array();
     $items = array();
     foreach (auditsanteIndex::eqLogics() as $id => $eqLogic) {
       if ($eqLogic['isEnable'] != 1 || $eqLogic['isVisible'] == 1 || self::isSelf($eqLogic)) {
@@ -1060,28 +1273,36 @@ class auditsanteChecks {
       if ($historized || count(auditsanteIndex::externalUsersOfEqLogic($id)) > 0) {
         continue;
       }
-      $items[] = self::item(auditsanteIndex::eqLogicName($id) . ' (' . $eqLogic['eqType_name'] . ')', auditsanteIndex::eqLogicUrl($id));
+      $item = self::item(auditsanteIndex::eqLogicName($id) . ' (' . $eqLogic['eqType_name'] . ')', auditsanteIndex::eqLogicUrl($id));
+      if (!self::isVoluntary($item, 'eqLogic:' . $id, $keys, $voluntary)) {
+        $items[] = $item;
+      }
     }
     if (count($items) == 0) {
-      return self::pass(__('Aucun équipement orphelin.', __FILE__));
+      return self::withVoluntary(self::pass(__('Aucun équipement orphelin.', __FILE__)), $voluntary);
     }
-    return self::warn(sprintf(__('%d équipement(s) actif(s), masqué(s) et utilisé(s) nulle part.', __FILE__), count($items)), $items);
+    return self::withVoluntary(self::warn(sprintf(__('%d équipement(s) actif(s), masqué(s) et utilisé(s) nulle part.', __FILE__), count($items)), $items), $voluntary);
   }
 
   private static function check_eq_disabled() {
+    $keys = self::excludedKeys('eq_disabled');
+    $voluntary = array();
     $items = array();
     foreach (auditsanteIndex::eqLogics() as $id => $eqLogic) {
       if ($eqLogic['isEnable'] == 1) {
         continue;
       }
       $users = auditsanteIndex::externalUsersOfEqLogic($id);
-      $items[] = self::item(auditsanteIndex::eqLogicName($id) . ' (' . $eqLogic['eqType_name'] . ')'
+      $item = self::item(auditsanteIndex::eqLogicName($id) . ' (' . $eqLogic['eqType_name'] . ')'
         . (count($users) > 0 ? ' - ' . __('encore utilisé par', __FILE__) . ' ' . self::usersSummary($users) : ''), auditsanteIndex::eqLogicUrl($id));
+      if (!self::isVoluntary($item, 'eqLogic:' . $id, $keys, $voluntary)) {
+        $items[] = $item;
+      }
     }
     if (count($items) == 0) {
-      return self::pass(__('Aucun équipement désactivé.', __FILE__));
+      return self::withVoluntary(self::pass(__('Aucun équipement désactivé.', __FILE__)), $voluntary);
     }
-    return self::warn(sprintf(__('%d équipement(s) désactivé(s).', __FILE__), count($items)), $items);
+    return self::withVoluntary(self::warn(sprintf(__('%d équipement(s) désactivé(s).', __FILE__), count($items)), $items), $voluntary);
   }
 
   private static function check_eq_no_object() {
@@ -1303,6 +1524,8 @@ class auditsanteChecks {
       }
     }
     $consumers = auditsanteIndex::consumers();
+    $keys = self::excludedKeys('object_empty');
+    $voluntary = array();
     $items = array();
     foreach ($objects as $id => $object) {
       if (isset($hasEq[$id]) || isset($hasChild[$id])) {
@@ -1311,31 +1534,42 @@ class auditsanteChecks {
       if (isset($consumers['object:' . $id]) && count($consumers['object:' . $id]['refs']['cmd']) > 0) {
         continue; // Résumé configuré
       }
-      $items[] = self::item('[' . $object['name'] . ']', 'index.php?v=d&p=object&id=' . $id);
+      $item = self::item('[' . $object['name'] . ']', 'index.php?v=d&p=object&id=' . $id);
+      if (!self::isVoluntary($item, 'object:' . $id, $keys, $voluntary)) {
+        $items[] = $item;
+      }
     }
     if (count($items) == 0) {
-      return self::pass(__('Aucun objet vide.', __FILE__));
+      return self::withVoluntary(self::pass(__('Aucun objet vide.', __FILE__)), $voluntary);
     }
-    return self::warn(sprintf(__('%d objet(s) vide(s).', __FILE__), count($items)), $items);
+    return self::withVoluntary(self::warn(sprintf(__('%d objet(s) vide(s).', __FILE__), count($items)), $items), $voluntary);
   }
 
   private static function check_view_empty() {
+    $keys = self::excludedKeys('view_empty');
+    $voluntary = array();
     $items = array();
     foreach (self::query('SELECT v.id, v.name FROM view v WHERE NOT EXISTS (SELECT 1 FROM viewZone z JOIN viewData d ON d.viewZone_id = z.id WHERE z.view_id = v.id)') as $row) {
-      $items[] = self::item(__('Vue', __FILE__) . ' [' . $row['name'] . ']', 'index.php?v=d&p=view&view_id=' . $row['id']);
+      $item = self::item(__('Vue', __FILE__) . ' [' . $row['name'] . ']', 'index.php?v=d&p=view&view_id=' . $row['id']);
+      if (!self::isVoluntary($item, 'view:' . $row['id'], $keys, $voluntary)) {
+        $items[] = $item;
+      }
     }
     foreach (array('plan' => array('planHeader', 'planHeader_id', 'plan_id', __('Design', __FILE__)), 'plan3d' => array('plan3dHeader', 'plan3dHeader_id', 'plan3d_id', __('Design 3D', __FILE__))) as $table => $def) {
       if (!auditsanteIndex::tableExists($table) || !auditsanteIndex::tableExists($def[0])) {
         continue;
       }
       foreach (self::query('SELECT h.id, h.name FROM ' . $def[0] . ' h WHERE NOT EXISTS (SELECT 1 FROM ' . $table . ' p WHERE p.' . $def[1] . ' = h.id)') as $row) {
-        $items[] = self::item($def[3] . ' [' . $row['name'] . ']', 'index.php?v=d&p=' . $table . '&' . $def[2] . '=' . $row['id']);
+        $item = self::item($def[3] . ' [' . $row['name'] . ']', 'index.php?v=d&p=' . $table . '&' . $def[2] . '=' . $row['id']);
+        if (!self::isVoluntary($item, $table . ':' . $row['id'], $keys, $voluntary)) {
+          $items[] = $item;
+        }
       }
     }
     if (count($items) == 0) {
-      return self::pass(__('Aucune vue ni aucun design vide.', __FILE__));
+      return self::withVoluntary(self::pass(__('Aucune vue ni aucun design vide.', __FILE__)), $voluntary);
     }
-    return self::warn(sprintf(__('%d vue(s) ou design(s) vide(s).', __FILE__), count($items)), $items);
+    return self::withVoluntary(self::warn(sprintf(__('%d vue(s) ou design(s) vide(s).', __FILE__), count($items)), $items), $voluntary);
   }
 
   private static function check_widget_unused() {
@@ -1471,17 +1705,22 @@ class auditsanteChecks {
     foreach (auditsanteIndex::eqLogics() as $eqLogic) {
       $counts[$eqLogic['eqType_name']] = (isset($counts[$eqLogic['eqType_name']]) ? $counts[$eqLogic['eqType_name']] : 0) + 1;
     }
+    $keys = self::excludedKeys('plugin_disabled');
+    $voluntary = array();
     $items = array();
     foreach (auditsanteIndex::plugins() as $id => $info) {
       if ($info['active']) {
         continue;
       }
-      $items[] = self::item($info['name'] . ' (' . $id . ') : ' . sprintf(__('%d équipement(s)', __FILE__), isset($counts[$id]) ? $counts[$id] : 0), 'index.php?v=d&p=plugin&id=' . urlencode($id));
+      $item = self::item($info['name'] . ' (' . $id . ') : ' . sprintf(__('%d équipement(s)', __FILE__), isset($counts[$id]) ? $counts[$id] : 0), 'index.php?v=d&p=plugin&id=' . urlencode($id));
+      if (!self::isVoluntary($item, 'plugin:' . $id, $keys, $voluntary)) {
+        $items[] = $item;
+      }
     }
     if (count($items) == 0) {
-      return self::pass(__('Aucun plugin désactivé.', __FILE__));
+      return self::withVoluntary(self::pass(__('Aucun plugin désactivé.', __FILE__)), $voluntary);
     }
-    return self::warn(sprintf(__('%d plugin(s) installé(s) mais désactivé(s).', __FILE__), count($items)), $items);
+    return self::withVoluntary(self::warn(sprintf(__('%d plugin(s) installé(s) mais désactivé(s).', __FILE__), count($items)), $items), $voluntary);
   }
 
   private static function check_plugin_no_eq() {
@@ -1528,14 +1767,39 @@ class auditsanteChecks {
     return stripos($page, 'eqLogicThumbnailContainer') !== false || preg_match('/data-action\s*=\s*["\']add["\']/i', $page) === 1;
   }
 
+  /**
+   * Libellé d'une configuration rangée sous un plugin absent. Certains plugins défectueux enregistrent leur
+   * configuration sous un chemin de fichier (…/plugins/<id>/plugin_info/info.json) ou sous « false », « null »,
+   * une chaîne vide... au lieu de leur identifiant.
+   */
+  private static function leftoverLabel($_plugin, $_plugins) {
+    if (preg_match('#plugins/([^/]+)/plugin_info#', $_plugin, $match)) {
+      $id = $match[1];
+      if ($id === 'false' || $id === 'null' || $id === '') {
+        return sprintf(__('Configuration enregistrée sous un chemin de fichier sans nom de plugin (%s)', __FILE__), $_plugin);
+      }
+      return sprintf(__('Configuration du plugin %s, enregistrée sous son chemin de fichier', __FILE__), $id)
+        . (isset($_plugins[$id]) ? ' (' . __('plugin installé, mais cette copie ne sert plus', __FILE__) . ')' : '');
+    }
+    if (in_array(strtolower(trim($_plugin)), array('', 'false', 'null', 'undefined', '0'))) {
+      return sprintf(__('Configuration sans nom de plugin (« %s »), écrite par un plugin défectueux', __FILE__), $_plugin);
+    }
+    return sprintf(__('Configuration du plugin %s', __FILE__), $_plugin);
+  }
+
   private static function check_plugin_leftovers() {
     $plugins = auditsanteIndex::plugins();
     $items = array();
-    foreach (self::query("SELECT plugin, COUNT(*) AS n FROM config WHERE plugin <> 'core' GROUP BY plugin") as $row) {
-      if (isset($plugins[$row['plugin']])) {
-        continue;
+    $byPlugin = array();
+    foreach (self::query("SELECT plugin, `key` FROM config WHERE plugin <> 'core'") as $row) {
+      if (!isset($plugins[$row['plugin']])) {
+        $byPlugin[(string) $row['plugin']][] = (string) $row['key'];
       }
-      $items[] = self::item(sprintf(__('Configuration du plugin %s : %d paramètre(s)', __FILE__), $row['plugin'], $row['n']));
+    }
+    foreach ($byPlugin as $plugin => $keys) {
+      $text = self::leftoverLabel($plugin, $plugins) . ' : ' . sprintf(__('%d paramètre(s)', __FILE__), count($keys))
+        . ' (' . implode(', ', array_slice($keys, 0, 3)) . (count($keys) > 3 ? '...' : '') . ')';
+      $items[] = self::item($text);
     }
     foreach (self::query("SELECT logicalId, name FROM `update` WHERE type = 'plugin'") as $row) {
       if (isset($plugins[$row['logicalId']])) {
@@ -1606,6 +1870,28 @@ class auditsanteChecks {
       return self::result('pass', sprintf(__('Les %d variable(s) sont utilisées.', __FILE__), $total) . $detail, array(), array('excluded' => $excluded));
     }
     return self::result('warn', sprintf(__('%d variable(s) sur %d utilisée(s) nulle part.', __FILE__), count($items), $total) . $detail, $items, array('excluded' => $excluded));
+  }
+
+  /**
+   * Élément qu'on peut marquer comme voulu : il reçoit sa clé ; s'il est déjà marqué, il passe dans $_voluntary
+   * (affiché à part, plus compté) et la fonction retourne vrai.
+   */
+  private static function isVoluntary(&$_item, $_key, $_keys, &$_voluntary) {
+    $_item['exclude'] = $_key;
+    if (!isset($_keys[$_key])) {
+      return false;
+    }
+    $_voluntary[] = $_item;
+    return true;
+  }
+
+  /** Ajoute au résultat les éléments marqués comme voulus, et leur nombre au détail. */
+  private static function withVoluntary($_result, $_voluntary) {
+    if (count($_voluntary) > 0) {
+      $_result['detail'] .= ' ' . sprintf(__('%d exclu(s) de l\'audit, affiché(s) sans compter dans la note.', __FILE__), count($_voluntary));
+      $_result['excluded'] = $_voluntary;
+    }
+    return $_result;
   }
 
   /** Éléments exclus d'un contrôle par l'utilisateur (data/excluded.json) : {clé => {since, by}}. */

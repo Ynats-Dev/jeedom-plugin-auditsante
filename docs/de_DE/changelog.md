@@ -5,6 +5,18 @@ lang: de_DE
 
 # Changelog Audit Santé
 
+# 26/11/2026 - 0.1.1
+
+- Schaltfläche „Ausschließen“ erweitert auf deaktivierte Plugins, stumme, verwaiste oder im Timeout befindliche Geräte, leere Objekte sowie leere Ansichten und Designs (selten wechselnder Sensor, saisonales Gerät, von der API gelesenes Gerät, im Voraus angelegter Raum...).
+- Absichtlich deaktivierte Szenarien und Geräte: Schaltfläche „Ausschließen“ bei sechs Prüfungen (Szenarien, die nie starten können, nicht mehr starten, deaktivierte Elemente verwenden, von einem deaktivierten Gerät ausgelöst werden, vergessene deaktivierte Szenarien, deaktivierte Geräte). Das Element bleibt separat aufgeführt, zählt nicht mehr in der Bewertung und lässt sich mit einem Klick wieder aufnehmen.
+- Geräte und Befehle, die mit gelöschten Elementen verknüpft sind: Stelle der Referenz (Aktion vor oder nach der Ausführung, Aktion bei Wert, verknüpfter Wert...), direktes Öffnen der erweiterten Befehlskonfiguration und eine Schaltfläche, die die verwaiste Aktion über Jeedom entfernt.
+- Info-Befehl: Eine Aktion vor oder nach der Ausführung, die Jeedom bei diesem Befehlstyp nicht anzeigt, wird als ausgeblendet gemeldet, mit dem Vorgehen (Befehl ohne Änderung speichern oder Schaltfläche „Verwaisten Info-Wert löschen“).
+- Geistergeräte: automatische Korrektur, die die Geräte nicht mehr installierter Plugins samt Befehlen und Verlauf löscht. Geräte deaktivierter Plugins bleiben unberührt.
+- Szenarien, die gelöschte Elemente verwenden: Jeder Verweis zeigt seine Stelle an (Auslöser, Bedingung oder Aktion eines Blocks, und „in ihren Optionen“, wenn er in einem Feld der Aktion steht).
+- Auslöser eines Szenarios im Modus Programmiert, die Jeedom in der Datenbank behält, aber ausblendet und nicht verwendet, werden nicht mehr geprüft.
+- Eine Nummer, die größer ist als die letzte von Jeedom vergebene Kennung (Telegram-Chat-ID, Telefonnummer...), wird nicht mehr als nicht gefundener Verweis gemeldet.
+- Plugin-Reste: Die Namen der Parameter werden angezeigt, und Konfigurationen unter einem Dateipfad oder ohne Plugin-Namen („false“, „null“) werden erklärt.
+
 # 24/11/2026 - 0.1.0
 
 - Erste Version: 42 Prüfungen in 7 Kategorien (defekte Verweise, Szenarien, Geräte, Befehle und Verlauf, Objekte/Ansichten/Designs, Plugins und Aufgaben, Datenbank und Dateien).

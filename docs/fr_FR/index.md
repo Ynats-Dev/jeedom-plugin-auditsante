@@ -42,7 +42,7 @@ Le rapport affiche :
 
 ## Ce que le plugin contrôle
 
-Le plugin lit une seule fois l'ensemble de l'installation (objets, équipements, commandes, scénarios et tous leurs blocs, interactions, vues, designs, designs 3D, résumés, configuration, utilisateurs) et construit l'index « qui utilise quoi ». Il reconnaît les références `#1234#` (commande), `#eqLogic12#` (équipement), `#scenario5#` et `scenario_id` (scénario), ainsi que les éléments posés dans les vues et les designs.
+Le plugin lit une seule fois l'ensemble de l'installation (objets, équipements, commandes, scénarios et tous leurs blocs, interactions, vues, designs, designs 3D, résumés, configuration, utilisateurs) et construit l'index « qui utilise quoi ». Il reconnaît les références `#1234#` (commande), `#eqLogic12#` (équipement), `#scenario5#` et `scenario_id` (scénario), ainsi que les éléments posés dans les vues et les designs. Un numéro plus grand que le dernier identifiant attribué par Jeedom n'est pas signalé comme introuvable : il n'a jamais désigné un élément (identifiant de conversation Telegram, numéro de téléphone écrit entre dièses...).
 
 ### Références cassées
 
@@ -72,7 +72,7 @@ Le plugin lit une seule fois l'ensemble de l'installation (objets, équipements,
 
 | Contrôle | Importance | Ce qui est recherché | Correction auto |
 |---|---|---|---|
-| Équipements fantômes (plugin supprimé ou désactivé) | Élevée | Quand un plugin est supprimé ou désactivé, ses équipements restent dans la base : ils n'apparaissent plus nulle part, mais les scénarios, vues et designs qui les utilisent ne fonctionnent plus. |  |
+| Équipements fantômes (plugin supprimé ou désactivé) | Élevée | Quand un plugin est supprimé ou désactivé, ses équipements restent dans la base : ils n'apparaissent plus nulle part, mais les scénarios, vues et designs qui les utilisent ne fonctionnent plus. | Oui |
 | Équipements en timeout | Moyenne | Ces équipements n'ont pas communiqué dans le délai d'alerte configuré : pile vide, module hors de portée, appareil débranché... |  |
 | Piles faibles | Moyenne | Le niveau de pile de ces équipements est sous le seuil d'alerte (Réglages > Système > Configuration > Équipements, ou seuil propre à l'équipement). |  |
 | Équipements muets | Faible | Équipements actifs dont aucune commande info n'a reçu de valeur depuis longtemps, et sans délai d'alerte (timeout) configuré : Jeedom ne les signale donc jamais. Ce sont souvent des modules morts ou retirés de la maison. |  |
@@ -148,13 +148,15 @@ Un contrôle **Rien à signaler** rapporte tous ses points, un contrôle **À v�
 Selon le contrôle, le détail propose :
 
 - un **lien** sur chaque élément listé (scénario, équipement, vue...), qui ouvre sa page dans Jeedom ;
-- un bouton de **correction automatique** (icône baguette magique) pour les seuls cas sans risque : supprimer ce que plus rien ne peut utiliser (commandes sans équipement, historique de commandes supprimées, logs de scénarios supprimés, tâches et écouteurs d'un plugin supprimé, variables d'éléments supprimés). Une fenêtre explique ce qui va être supprimé avant toute action. Faites une sauvegarde avant ;
+- un bouton de **correction automatique** (icône baguette magique) pour les seuls cas sans risque : supprimer ce que plus rien ne peut utiliser (commandes sans équipement, historique de commandes supprimées, logs de scénarios supprimés, tâches et écouteurs d'un plugin supprimé, variables d'éléments supprimés, équipements d'un plugin qui n'est plus installé). Une fenêtre explique ce qui va être supprimé avant toute action. Faites une sauvegarde avant ;
 - **Revérifier**, pour relancer uniquement ce contrôle après une correction manuelle ;
 - **Ignorer**, si la situation est voulue (un équipement de secours gardé désactivé, un scénario lancé par l'API...). Le contrôle sort de la note et reste visible dans le filtre **Ignorés**. Choisissez une durée (7 jours, 30 jours, 3 mois, 1 an ou sans limite) : à son terme, le contrôle revient dans la note et un message Jeedom vous prévient. Vous pouvez noter la raison ;
-- **Exclure un élément** (icône œil barré à droite de son nom, pour les variables inutilisées), quand vous savez qu'il sert alors que l'audit ne le voit pas (variable lue par un programme externe, nom construit d'une façon que l'audit ne reconnaît pas). Le contrôle est revérifié aussitôt : l'élément sort de la liste et du décompte, et passe dans la liste **Exclus de l'audit**, d'où un clic le réintègre. Contrairement à **Ignorer**, le reste du contrôle continue de compter dans la note ;
+- **Exclure un élément** (bouton **Exclure** à droite de son nom, pour les variables inutilisées), quand vous savez qu'il sert alors que l'audit ne le voit pas (variable lue par un programme externe, nom construit d'une façon que l'audit ne reconnaît pas). Le contrôle est revérifié aussitôt : l'élément sort de la liste et du décompte, et passe dans la liste **Exclus de l'audit**, d'où un clic le réintègre. Contrairement à **Ignorer**, le reste du contrôle continue de compter dans la note ;
+- **Exclure un scénario ou un équipement** (bouton à droite de l'élément, pour les scénarios qui ne peuvent jamais se lancer, qui ne se lancent plus, qui utilisent des éléments désactivés ou qui sont déclenchés par un équipement désactivé, les scénarios désactivés oubliés, les équipements désactivés, muets, orphelins ou en timeout, les plugins désactivés, les objets vides et les vues et designs vides) : la situation est volontaire (scénario lancé par une URL ou l'API, alarme intrusion qui ne se déclenche qu'en cas de cambriolage, équipement qui se désactive et se réactive selon certains événements...). L'élément reste affiché dans la liste **Exclus de l'audit**, mais ne compte plus dans la note ; si tous les éléments du contrôle sont voulus, il passe au vert. Le bouton **Réintégrer** annule ce choix ;
+- **Retirer une référence introuvable** (bouton rouge **Supprimer la valeur info orpheline** ou **Supprimer la référence orpheline**, à droite d'une commande ou d'un équipement lié à un élément supprimé) : l'action qui utilise l'élément supprimé (action avant ou après exécution, action sur valeur...) est retirée, ou le paramètre qui ne contient que lui est vidé, puis l'élément est enregistré par Jeedom. L'ancienne configuration est notée dans le log du plugin. Une référence prise dans une formule n'est pas touchée : un clic sur la commande ouvre sa configuration avancée, et l'emplacement indiqué dit où la corriger ;
 - **Commenter**, pour garder une note sur le contrôle.
 
-Le plugin ne supprime jamais un scénario, un équipement ou une commande qui a encore un équipement : ces décisions vous reviennent.
+Le plugin ne supprime jamais un scénario, ni un équipement dont le plugin est encore installé (même désactivé), ni une commande qui a encore un équipement : ces décisions vous reviennent.
 
 ## Retrouver le nom d'un élément supprimé
 
@@ -248,6 +250,9 @@ Non. Seuls les boutons de correction automatique modifient la base, et toujours 
 
 **Pourquoi un équipement que j'utilise est-il signalé comme orphelin ?**
 Il est masqué, aucune de ses commandes n'est historisée, et le plugin ne trouve aucune référence vers lui (voir les limites ci-dessus). Ignorez le contrôle ou rendez l'équipement visible.
+
+**Une référence introuvable est signalée dans un scénario, mais je ne la vois pas dans l'éditeur**
+Chaque ligne indique où se trouve la référence : déclencheur, condition ou action d'un bloc (SI, ALORS, SINON...), et « dans ses options » si elle n'est pas dans la commande de l'action mais dans un de ses champs (message, titre...). Les déclencheurs d'un scénario en mode **Programmé** ne sont pas contrôlés : Jeedom les garde en base mais les masque et ne s'en sert pas.
 
 **Signaler un problème**
 Passez le log du plugin en Debug, relancez l'audit, puis cliquez sur **Diagnostic** dans la page du plugin et joignez le fichier à votre message sur le forum (les adresses publiques, les comptes et les e-mails y sont masqués).

@@ -5,6 +5,18 @@ lang: fr_FR
 
 # Changelog Audit Santé
 
+# 26/11/2026 - 0.1.1
+
+- Bouton « Exclure » étendu aux plugins désactivés, aux équipements muets, orphelins ou en timeout, aux objets vides et aux vues et designs vides (capteur qui change rarement, appareil saisonnier, équipement lu par l'API, pièce préparée à l'avance...).
+- Scénarios et équipements désactivés volontairement : bouton « Exclure » sur six contrôles (scénarios qui ne peuvent jamais se lancer, qui ne se lancent plus, qui utilisent des éléments désactivés, déclenchés par un équipement désactivé, scénarios désactivés oubliés, équipements désactivés). L'élément reste affiché à part, ne compte plus dans la note, et se réintègre d'un clic.
+- Équipements et commandes liés à des éléments supprimés : emplacement de la référence (action avant ou après exécution, action sur valeur, valeur liée...), ouverture directe de la configuration avancée de la commande, et bouton qui retire l'action orpheline via Jeedom.
+- Commande info : une action avant ou après exécution, que Jeedom n'affiche pas sur ce type de commande, est signalée comme masquée, avec la marche à suivre (sauvegarder la commande sans rien modifier, ou le bouton « Supprimer la valeur info orpheline »).
+- Équipements fantômes : correction automatique qui supprime les équipements des plugins qui ne sont plus installés, avec leurs commandes et leur historique. Ceux des plugins désactivés ne sont pas touchés.
+- Scénarios qui utilisent des éléments supprimés : chaque référence indique son emplacement (déclencheur, condition ou action d'un bloc, et « dans ses options » si elle est dans un champ de l'action).
+- Les déclencheurs d'un scénario en mode Programmé, que Jeedom garde en base mais masque et n'utilise pas, ne sont plus contrôlés.
+- Un numéro plus grand que le dernier identifiant attribué par Jeedom (identifiant de conversation Telegram, numéro de téléphone...) n'est plus signalé comme référence introuvable.
+- Restes de plugins : noms des paramètres affichés, et configurations enregistrées sous un chemin de fichier ou sans nom de plugin (« false », « null ») expliquées.
+
 # 24/11/2026 - 0.1.0
 
 - Première version : 42 contrôles en 7 catégories (références cassées, scénarios, équipements, commandes et historique, objets/vues/designs, plugins et tâches, base de données et fichiers).

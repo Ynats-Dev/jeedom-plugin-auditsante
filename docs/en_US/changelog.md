@@ -5,6 +5,18 @@ lang: en_US
 
 # Audit Santé changelog
 
+# 26/11/2026 - 0.1.1
+
+- “Exclude” button extended to disabled plugins, silent, orphan or timed-out devices, empty objects and empty views and designs (sensor that rarely changes, seasonal device, device read by the API, room prepared in advance...).
+- Scenarios and devices disabled on purpose: “Exclude” button on six checks (scenarios that can never run, that no longer run, that use disabled items, triggered by a disabled device, forgotten disabled scenarios, disabled devices). The item stays listed separately, no longer counts in the score, and can be restored in one click.
+- Devices and commands linked to deleted items: location of the reference (action before or after execution, action on value, linked value...), direct opening of the command's advanced configuration, and a button that removes the orphan action through Jeedom.
+- Info command: an action before or after execution, which Jeedom does not display on this type of command, is reported as hidden, with what to do (save the command without changing anything, or use the “Delete the orphan info value” button).
+- Ghost devices: automatic fix that deletes the devices of plugins that are no longer installed, along with their commands and history. Devices of disabled plugins are not touched.
+- Scenarios using deleted items: each reference shows its location (trigger, condition or action of a block, and "in its options" when it is in one of the action's fields).
+- Triggers of a scenario in Scheduled mode, which Jeedom keeps in the database but hides and does not use, are no longer checked.
+- A number greater than the last identifier assigned by Jeedom (Telegram chat ID, phone number...) is no longer reported as a missing reference.
+- Plugin leftovers: setting names are shown, and configurations saved under a file path or with no plugin name ("false", "null") are explained.
+
 # 24/11/2026 - 0.1.0
 
 - First version: 42 checks in 7 categories (broken references, scenarios, devices, commands and history, objects/views/designs, plugins and tasks, database and files).

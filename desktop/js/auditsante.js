@@ -153,6 +153,7 @@
     }
     if (match && icons[match[1]]) return icons[match[1]]
     if (/[?&]modal=dataStore\./.test(_url)) return icons.dataStore
+    if (/[?&]modal=cmd\./.test(_url)) return 'fas fa-microchip'
     return /[?&]m=/.test(_url) ? 'fas fa-microchip' : 'fas fa-link'
   }
 
@@ -203,7 +204,7 @@
   function parseItem(_item) {
     var parts = splitItem(itemText(_item))
     var isObject = (_item && typeof _item === 'object')
-    var parsed = { head: parts[0], url: (isObject && _item.url) || '', exclude: (isObject && _item.exclude) || '', tags: [], text: parts[1], note: '' }
+    var parsed = { head: parts[0], url: (isObject && _item.url) || '', exclude: (isObject && _item.exclude) || '', repair: (isObject && _item.repair) || '', repairLabel: (isObject && _item.repairLabel) || '', tags: [], text: parts[1], note: '' }
     var cut
     while ((cut = splitNote(parsed.head)).note !== '') {
       parsed.head = cut.text
@@ -220,16 +221,17 @@
 
   /**
    * Liste des éléments d'un contrôle : les lignes consécutives d'un même élément sont regroupées.
-   * _canExclude : chaque élément qui porte une clé d'exclusion reçoit un bouton « Exclure de l'audit ».
+   * _excludeMode : bouton des éléments qui portent une clé d'exclusion. « unused » : « Exclure » (variable utilisée
+   * sans que l'audit le voie) ; « voluntary » : « Exclure » (élément voulu, affiché à part) ; « include » : « Réintégrer » ; vide : aucun bouton.
    */
-  function renderItems(_items, _canExclude) {
+  function renderItems(_items, _excludeMode) {
     var groups = []
     _items.forEach(function (item) {
       var parsed = parseItem(item)
-      var key = parsed.head + '|' + parsed.tags.join('|') + '|' + parsed.url + '|' + parsed.exclude
+      var key = parsed.head + '|' + parsed.tags.join('|') + '|' + parsed.url + '|' + parsed.exclude + '|' + parsed.repair
       var last = groups[groups.length - 1]
       if (!last || last.key !== key || parsed.text === '') {
-        last = { key: key, head: parsed.head, tags: parsed.tags, url: parsed.url, exclude: _canExclude ? parsed.exclude : '', lines: [] }
+        last = { key: key, head: parsed.head, tags: parsed.tags, url: parsed.url, exclude: _excludeMode ? parsed.exclude : '', excludeMode: _excludeMode || '', repair: parsed.repair, repairLabel: parsed.repairLabel, lines: [] }
         groups.push(last)
       }
       if (parsed.text !== '' || parsed.note !== '') last.lines.push(parsed)
@@ -261,21 +263,47 @@
       })
     }
     html += '</span>'
+    var title = /modal=cmd\.configure/.test(_group.url) ? '{{Configuration avancée de la commande}}' : '{{Ouvrir}}'
     var row = _group.url
-      ? '<a class="auditsante-item" href="' + esc(_group.url) + '" target="_blank" rel="noopener" title="{{Ouvrir}}">' + html + '<i class="fas fa-external-link-alt auditsante-item-open"></i></a>'
+      ? '<a class="auditsante-item" href="' + esc(_group.url) + '" target="_blank" rel="noopener" title="' + title + '">' + html + '<i class="fas fa-external-link-alt auditsante-item-open"></i></a>'
       : '<span class="auditsante-item">' + html + '</span>'
+    // Retrait de l'action orpheline (commande ou équipement), via Jeedom
+    if (_group.repair) {
+      return '<li class="auditsante-item-row">' + row
+        + '<button type="button" class="auditsante-item-repair auditsante-bt-repair" data-key="' + esc(_group.repair) + '" title="{{L\'action ou le paramètre qui utilise cet élément supprimé est retiré, puis la commande est enregistrée par Jeedom}}"><i class="fas fa-trash-alt"></i> ' + esc(_group.repairLabel || '{{Supprimer la référence orpheline}}') + '</button></li>'
+    }
     if (!_group.exclude) return '<li>' + row + '</li>'
     // Bouton hors du lien : un clic dessus ne doit pas ouvrir la page de l'élément
-    return '<li class="auditsante-item-row">' + row
-      + '<button type="button" class="auditsante-item-exclude auditsante-bt-exclude" data-key="' + esc(_group.exclude) + '" title="{{Exclure de l\'audit : il sert, mais l\'audit ne le voit pas}}"><i class="fas fa-eye-slash"></i></button></li>'
+    return '<li class="auditsante-item-row">' + row + excludeButton(_group.exclude, _group.excludeMode) + '</li>'
   }
 
-  /** Éléments que l'utilisateur a exclus du contrôle, chacun avec un bouton pour le réintégrer. */
+  /** Bouton d'exclusion d'un élément, selon le contrôle (voir renderItems). */
+  function excludeButton(_key, _mode) {
+    var buttons = {
+      unused: ['auditsante-bt-exclude auditsante-item-excludable', 'fas fa-eye-slash', '{{Exclure}}', '{{Exclure de l\'audit : il sert, mais l\'audit ne le voit pas}}'],
+      voluntary: ['auditsante-bt-exclude auditsante-item-excludable', 'fas fa-eye-slash', '{{Exclure}}', '{{Exclure de l\'audit : l\'élément reste affiché, mais ne compte plus dans la note}}'],
+      include: ['auditsante-bt-include auditsante-item-excludable', 'fas fa-undo', '{{Réintégrer}}', '{{Réintégrer dans l\'audit : l\'élément compte de nouveau dans la note}}']
+    }
+    var b = buttons[_mode] || buttons.unused
+    return '<button type="button" class="auditsante-item-exclude ' + b[0] + '" data-key="' + esc(_key) + '" title="' + b[3] + '"><i class="' + b[1] + '"></i> ' + b[2] + '</button>'
+  }
+
+  /**
+   * Éléments que l'utilisateur a exclus du contrôle, chacun avec un bouton pour le réintégrer.
+   * Éléments complets (marqués comme voulus) ou simples clés (variables).
+   */
   function renderExcluded(_check) {
-    var html = '<div class="auditsante-excluded"><h4><i class="fas fa-eye-slash"></i> {{Exclus de l\'audit}} (' + _check.excluded.length + ')</h4><ul class="auditsante-items">'
+    var voluntary = (_check.excludeMode == 'voluntary')
+    var html = '<div class="auditsante-excluded"><h4><i class="fas ' + 'fa-eye-slash' + '"></i> '
+      + (voluntary ? '{{Exclus de l\'audit : affichés pour information, ils ne comptent pas dans la note}}' : '{{Exclus de l\'audit}}')
+      + ' (' + _check.excluded.length + ')</h4>'
+    if (_check.excluded.length > 0 && typeof _check.excluded[0] === 'object') {
+      return html + renderItems(_check.excluded, _check.ignored ? '' : 'include') + '</div>'
+    }
+    html += '<ul class="auditsante-items">'
     _check.excluded.forEach(function (key) {
       html += '<li class="auditsante-item-row"><span class="auditsante-item"><span class="auditsante-item-main"><span class="auditsante-item-head"><span class="auditsante-item-name">' + esc(key) + '</span></span></span></span>'
-        + '<button type="button" class="auditsante-item-exclude auditsante-bt-include" data-key="' + esc(key) + '" title="{{Réintégrer dans l\'audit}}"><i class="fas fa-eye"></i></button></li>'
+        + excludeButton(key, 'include') + '</li>'
     })
     return html + '</ul></div>'
   }
@@ -714,7 +742,7 @@
     html += '<div class="auditsante-check-body"><div class="auditsante-check-inner">'
     if (canRecover(_check)) html += renderRecoverCallout(_check)
     if (_check.items && _check.items.length > 0) {
-      html += renderItems(_check.items, _check.excludable && !_check.ignored)
+      html += renderItems(_check.items, (_check.excludable && !_check.ignored) ? (_check.excludeMode || 'unused') : '')
     }
     if (_check.excluded && _check.excluded.length > 0) html += renderExcluded(_check)
     html += '<div class="auditsante-explain">'
@@ -830,6 +858,18 @@
     confirmDialog(check.fix.label, esc(check.fix.confirm || '') + '<br><br>{{Continuer ?}}', function () {
       busy(_id, true)
       request('applyFix', { id: _id }, function (result) {
+        alertMessage(result.message, 'success')
+        setReport(result.report)
+      }, function () { busy(_id, false) })
+    })
+  }
+
+  /** Retire une référence introuvable d'une commande ou d'un équipement, après confirmation. */
+  function repairRef(_id, _key, _label, _title) {
+    confirmDialog(_title || '{{Supprimer la référence orpheline}}', '{{L\'action ou le paramètre qui utilise cet élément supprimé va être retiré de la configuration, puis enregistré par Jeedom. L\'ancienne configuration est notée dans le log du plugin.}}'
+      + (_label ? '<br><br><b>' + esc(_label) + '</b>' : '') + '<br><br>{{Continuer ?}}', function () {
+      busy(_id, true)
+      request('repairRef', { id: _id, key: _key }, function (result) {
         alertMessage(result.message, 'success')
         setReport(result.report)
       }, function () { busy(_id, false) })
@@ -1246,7 +1286,11 @@
       if (!row) return
       var id = row.getAttribute('data-id')
       var exclude = event.target.closest('.auditsante-bt-exclude, .auditsante-bt-include')
-      if (exclude) {
+      var repair = event.target.closest('.auditsante-bt-repair')
+      if (repair) {
+        var item = repair.parentNode.querySelector('.auditsante-item-main')
+        repairRef(id, repair.getAttribute('data-key'), item ? item.textContent.replace(/\s+/g, ' ').trim() : '', repair.textContent.trim())
+      } else if (exclude) {
         setExcluded(id, exclude.getAttribute('data-key'), exclude.classList.contains('auditsante-bt-exclude'))
       } else if (event.target.closest('.auditsante-bt-fix')) {
         applyFix(id)

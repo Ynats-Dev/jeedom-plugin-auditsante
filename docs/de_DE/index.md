@@ -42,7 +42,7 @@ Der Bericht zeigt:
 
 ## Was das Plugin prüft
 
-Das Plugin liest die gesamte Installation einmal (Objekte, Geräte, Befehle, Szenarien mit all ihren Blöcken, Interaktionen, Ansichten, Designs, 3D-Designs, Zusammenfassungen, Konfiguration, Benutzer) und erstellt den Index « wer verwendet was ». Es erkennt die Verweise `#1234#` (Befehl), `#eqLogic12#` (Gerät), `#scenario5#` und `scenario_id` (Szenario) sowie die in Ansichten und Designs platzierten Elemente.
+Das Plugin liest die gesamte Installation einmal (Objekte, Geräte, Befehle, Szenarien mit all ihren Blöcken, Interaktionen, Ansichten, Designs, 3D-Designs, Zusammenfassungen, Konfiguration, Benutzer) und erstellt den Index « wer verwendet was ». Es erkennt die Verweise `#1234#` (Befehl), `#eqLogic12#` (Gerät), `#scenario5#` und `scenario_id` (Szenario) sowie die in Ansichten und Designs platzierten Elemente. Eine Nummer, die größer ist als die letzte von Jeedom vergebene Kennung, wird nicht als nicht gefunden gemeldet: Sie hat nie ein Element bezeichnet (Telegram-Chat-ID, zwischen Rauten geschriebene Telefonnummer...).
 
 ### Defekte Verweise
 
@@ -72,7 +72,7 @@ Das Plugin liest die gesamte Installation einmal (Objekte, Geräte, Befehle, Sze
 
 | Prüfung | Bedeutung | Was gesucht wird | Automatische Korrektur |
 |---|---|---|---|
-| Geistergeräte (Plugin entfernt oder deaktiviert) | Hoch | Wenn ein Plugin entfernt oder deaktiviert wird, bleiben seine Geräte in der Datenbank: Sie erscheinen nirgends mehr, aber die Szenarien, Ansichten und Designs, die sie verwenden, funktionieren nicht mehr. |  |
+| Geistergeräte (Plugin entfernt oder deaktiviert) | Hoch | Wenn ein Plugin entfernt oder deaktiviert wird, bleiben seine Geräte in der Datenbank: Sie erscheinen nirgends mehr, aber die Szenarien, Ansichten und Designs, die sie verwenden, funktionieren nicht mehr. | Ja |
 | Geräte im Timeout | Mittel | Diese Geräte haben innerhalb der konfigurierten Alarmverzögerung nicht kommuniziert: Batterie leer, Modul außer Reichweite, Gerät ausgesteckt... |  |
 | Schwache Batterien | Mittel | Der Batteriestand dieser Geräte liegt unter der Alarmschwelle (Einstellungen > System > Konfiguration > Geräte oder gerätespezifische Schwelle). |  |
 | Stumme Geräte | Niedrig | Aktive Geräte, deren Info-Befehle seit langem keinen Wert erhalten haben und für die keine Alarmverzögerung (Timeout) konfiguriert ist: Jeedom meldet sie daher nie. Oft sind es tote oder aus dem Haus entfernte Module. |  |
@@ -148,13 +148,15 @@ Eine Prüfung **Nichts zu melden** bringt alle ihre Punkte, eine Prüfung **Zu p
 Je nach Prüfung bietet das Detail:
 
 - einen **Link** auf jedem aufgeführten Element (Szenario, Gerät, Ansicht...), der seine Seite in Jeedom öffnet;
-- eine Schaltfläche zur **automatischen Korrektur** (Zauberstab-Symbol) nur für risikofreie Fälle: Löschen dessen, was nichts mehr verwenden kann (Befehle ohne Gerät, Verlauf gelöschter Befehle, Logs gelöschter Szenarien, Aufgaben und Listener eines entfernten Plugins, Variablen gelöschter Elemente). Ein Fenster erklärt vor jeder Aktion, was gelöscht wird. Erstellen Sie vorher eine Sicherung;
+- eine Schaltfläche zur **automatischen Korrektur** (Zauberstab-Symbol) nur für risikofreie Fälle: Löschen dessen, was nichts mehr verwenden kann (Befehle ohne Gerät, Verlauf gelöschter Befehle, Logs gelöschter Szenarien, Aufgaben und Listener eines entfernten Plugins, Variablen gelöschter Elemente, Geräte eines nicht mehr installierten Plugins). Ein Fenster erklärt vor jeder Aktion, was gelöscht wird. Erstellen Sie vorher eine Sicherung;
 - **Erneut prüfen**, um nach einer manuellen Korrektur nur diese Prüfung erneut auszuführen;
 - **Ignorieren**, wenn die Situation gewollt ist (ein bewusst deaktiviert gelassenes Ersatzgerät, ein von der API gestartetes Szenario...). Die Prüfung zählt nicht mehr in der Bewertung und bleibt im Filter **Ignoriert** sichtbar. Wählen Sie eine Dauer (7 Tage, 30 Tage, 3 Monate, 1 Jahr oder unbegrenzt): Danach zählt die Prüfung wieder und eine Jeedom-Nachricht weist Sie darauf hin. Sie können den Grund notieren;
-- **Ein Element ausschließen** (Symbol durchgestrichenes Auge rechts neben seinem Namen, für unbenutzte Variablen), wenn Sie wissen, dass es verwendet wird, die Prüfung es aber nicht erkennt (Variable, die ein externes Programm liest, Name, der auf eine von der Prüfung nicht erkannte Weise gebildet wird). Die Prüfung wird sofort erneut ausgeführt: Das Element verlässt die Liste und die Zählung und erscheint in der Liste **Von der Prüfung ausgeschlossen**, wo ein Klick es wieder aufnimmt. Anders als bei **Ignorieren** zählt der Rest der Prüfung weiter in der Bewertung;
+- **Ein Element ausschließen** (Schaltfläche **Ausschließen** rechts neben seinem Namen, für unbenutzte Variablen), wenn Sie wissen, dass es verwendet wird, die Prüfung es aber nicht erkennt (Variable, die ein externes Programm liest, Name, der auf eine von der Prüfung nicht erkannte Weise gebildet wird). Die Prüfung wird sofort erneut ausgeführt: Das Element verlässt die Liste und die Zählung und erscheint in der Liste **Von der Prüfung ausgeschlossen**, wo ein Klick es wieder aufnimmt. Anders als bei **Ignorieren** zählt der Rest der Prüfung weiter in der Bewertung;
+- **Ein Szenario oder Gerät ausschließen** (Schaltfläche rechts neben dem Element, für Szenarien, die nie starten können, nicht mehr starten, deaktivierte Elemente verwenden oder von einem deaktivierten Gerät ausgelöst werden, vergessene deaktivierte Szenarien, deaktivierte, stumme, verwaiste oder im Timeout befindliche Geräte, deaktivierte Plugins, leere Objekte sowie leere Ansichten und Designs): Die Situation ist beabsichtigt (Szenario, das über eine URL oder die API gestartet wird, Einbruchalarm, der nur bei einem Einbruch auslöst, Gerät, das bei bestimmten Ereignissen deaktiviert und wieder aktiviert wird...). Das Element bleibt in der Liste **Von der Prüfung ausgeschlossen** sichtbar, zählt aber nicht mehr in der Bewertung; sind alle Elemente der Prüfung gewollt, wird sie grün. Die Schaltfläche **Wieder aufnehmen** macht diese Wahl rückgängig;
+- **Eine fehlende Referenz entfernen** (rote Schaltfläche **Verwaisten Info-Wert löschen** oder **Verwaiste Referenz löschen** rechts neben einem Befehl oder Gerät, das mit einem gelöschten Element verknüpft ist): Die Aktion, die das gelöschte Element verwendet (Aktion vor oder nach der Ausführung, Aktion bei Wert...), wird entfernt oder der Parameter, der nur sie enthält, geleert; anschließend speichert Jeedom das Element. Die vorherige Konfiguration wird im Plugin-Log festgehalten. Eine Referenz innerhalb einer Formel bleibt unverändert: Ein Klick auf den Befehl öffnet seine erweiterte Konfiguration, und die angegebene Stelle zeigt, wo sie zu korrigieren ist;
 - **Kommentieren**, um eine Notiz zur Prüfung zu behalten.
 
-Das Plugin löscht nie ein Szenario, ein Gerät oder einen Befehl, der noch ein Gerät hat: Diese Entscheidungen liegen bei Ihnen.
+Das Plugin löscht nie ein Szenario, ein Gerät, dessen Plugin noch installiert ist (auch deaktiviert), oder einen Befehl, der noch ein Gerät hat: Diese Entscheidungen liegen bei Ihnen.
 
 ## Den Namen eines gelöschten Elements wiederfinden
 
@@ -248,6 +250,9 @@ Nein. Nur die Schaltflächen zur automatischen Korrektur ändern die Datenbank, 
 
 **Warum wird ein Gerät, das ich verwende, als verwaist gemeldet?**
 Es ist ausgeblendet, keiner seiner Befehle ist historisiert und das Plugin findet keinen Verweis darauf (siehe Grenzen oben). Ignorieren Sie die Prüfung oder machen Sie das Gerät sichtbar.
+
+**In einem Szenario wird ein nicht gefundener Verweis gemeldet, den ich im Editor nicht sehe**
+Jede Zeile gibt an, wo sich der Verweis befindet: Auslöser, Bedingung oder Aktion eines Blocks (WENN, DANN, SONST...), und „in ihren Optionen“, wenn er nicht der Befehl der Aktion ist, sondern in einem ihrer Felder steht (Nachricht, Titel...). Auslöser eines Szenarios im Modus **Programmiert** werden nicht geprüft: Jeedom behält sie in der Datenbank, blendet sie aber aus und verwendet sie nicht.
 
 **Ein Problem melden**
 Stellen Sie das Log des Plugins auf Debug, starten Sie das Audit erneut, klicken Sie dann auf der Plugin-Seite auf **Diagnose** und hängen Sie die Datei an Ihre Nachricht im Forum an (öffentliche Adressen, Konten und E-Mails sind darin maskiert).

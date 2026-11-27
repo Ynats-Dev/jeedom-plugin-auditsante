@@ -42,7 +42,7 @@ El informe muestra:
 
 ## Qué comprueba el plugin
 
-El plugin lee una sola vez toda la instalación (objetos, equipos, comandos, escenarios y todos sus bloques, interacciones, vistas, diseños, diseños 3D, resúmenes, configuración, usuarios) y construye el índice « quién usa qué ». Reconoce las referencias `#1234#` (comando), `#eqLogic12#` (equipo), `#scenario5#` y `scenario_id` (escenario), así como los elementos colocados en las vistas y los diseños.
+El plugin lee una sola vez toda la instalación (objetos, equipos, comandos, escenarios y todos sus bloques, interacciones, vistas, diseños, diseños 3D, resúmenes, configuración, usuarios) y construye el índice « quién usa qué ». Reconoce las referencias `#1234#` (comando), `#eqLogic12#` (equipo), `#scenario5#` y `scenario_id` (escenario), así como los elementos colocados en las vistas y los diseños. Un número mayor que el último identificador asignado por Jeedom no se indica como no encontrado: nunca designó un elemento (identificador de conversación de Telegram, número de teléfono escrito entre almohadillas...).
 
 ### Referencias rotas
 
@@ -72,7 +72,7 @@ El plugin lee una sola vez toda la instalación (objetos, equipos, comandos, esc
 
 | Comprobación | Importancia | Qué se busca | Corrección automática |
 |---|---|---|---|
-| Equipos fantasma (plugin eliminado o desactivado) | Alta | Cuando un plugin se elimina o desactiva, sus equipos permanecen en la base: ya no aparecen en ninguna parte, pero los escenarios, vistas y diseños que los usan dejan de funcionar. |  |
+| Equipos fantasma (plugin eliminado o desactivado) | Alta | Cuando un plugin se elimina o desactiva, sus equipos permanecen en la base: ya no aparecen en ninguna parte, pero los escenarios, vistas y diseños que los usan dejan de funcionar. | Sí |
 | Equipos en timeout | Media | Estos equipos no se han comunicado dentro del plazo de alerta configurado: pila agotada, módulo fuera de alcance, aparato desenchufado... |  |
 | Pilas bajas | Media | El nivel de pila de estos equipos está por debajo del umbral de alerta (Ajustes > Sistema > Configuración > Equipos, o umbral propio del equipo). |  |
 | Equipos mudos | Baja | Equipos activos cuyos comandos info no han recibido ningún valor desde hace mucho tiempo, y sin plazo de alerta (timeout) configurado: Jeedom nunca los señala. A menudo son módulos muertos o retirados de la casa. |  |
@@ -148,13 +148,15 @@ Una comprobación **Nada que señalar** suma todos sus puntos, una comprobación
 Según la comprobación, el detalle propone:
 
 - un **enlace** en cada elemento listado (escenario, equipo, vista...), que abre su página en Jeedom;
-- un botón de **corrección automática** (icono de varita mágica) solo para los casos sin riesgo: eliminar lo que ya nada puede usar (comandos sin equipo, historial de comandos eliminados, logs de escenarios eliminados, tareas y listeners de un plugin eliminado, variables de elementos eliminados). Una ventana explica lo que se va a eliminar antes de cualquier acción. Haga antes una copia de seguridad;
+- un botón de **corrección automática** (icono de varita mágica) solo para los casos sin riesgo: eliminar lo que ya nada puede usar (comandos sin equipo, historial de comandos eliminados, logs de escenarios eliminados, tareas y listeners de un plugin eliminado, variables de elementos eliminados, equipos de un plugin que ya no está instalado). Una ventana explica lo que se va a eliminar antes de cualquier acción. Haga antes una copia de seguridad;
 - **Volver a comprobar**, para relanzar solo esta comprobación tras una corrección manual;
 - **Ignorar**, si la situación es intencionada (un equipo de reserva mantenido desactivado, un escenario ejecutado por la API...). La comprobación sale de la nota y sigue visible en el filtro **Ignorados**. Elija una duración (7 días, 30 días, 3 meses, 1 año o sin límite): al terminar, la comprobación vuelve a contar y un mensaje de Jeedom le avisa. Puede anotar el motivo;
-- **Excluir un elemento** (icono de ojo tachado a la derecha de su nombre, para las variables no usadas), cuando sabe que se usa aunque la auditoría no lo vea (variable leída por un programa externo, nombre construido de una forma que la auditoría no reconoce). La comprobación se vuelve a ejecutar de inmediato: el elemento sale de la lista y del recuento, y pasa a la lista **Excluidos de la auditoría**, desde donde un clic lo vuelve a incluir. A diferencia de **Ignorar**, el resto de la comprobación sigue contando en la nota;
+- **Excluir un elemento** (botón **Excluir** a la derecha de su nombre, para las variables no usadas), cuando sabe que se usa aunque la auditoría no lo vea (variable leída por un programa externo, nombre construido de una forma que la auditoría no reconoce). La comprobación se vuelve a ejecutar de inmediato: el elemento sale de la lista y del recuento, y pasa a la lista **Excluidos de la auditoría**, desde donde un clic lo vuelve a incluir. A diferencia de **Ignorar**, el resto de la comprobación sigue contando en la nota;
+- **Excluir un escenario o un equipo** (botón a la derecha del elemento, para los escenarios que nunca pueden lanzarse, que ya no se lanzan, que utilizan elementos desactivados o que se disparan por un equipo desactivado, los escenarios desactivados olvidados, los equipos desactivados, mudos, huérfanos o en timeout, los plugins desactivados, los objetos vacíos y las vistas y diseños vacíos): la situación es voluntaria (escenario lanzado por una URL o la API, alarma de intrusión que solo se dispara en caso de robo, equipo que se desactiva y reactiva según ciertos eventos...). El elemento sigue apareciendo en la lista **Excluidos de la auditoría**, pero ya no cuenta en la nota; si todos los elementos de la comprobación son intencionados, pasa a verde. El botón **Reintegrar** anula esta elección;
+- **Quitar una referencia no encontrada** (botón rojo **Eliminar el valor info huérfano** o **Eliminar la referencia huérfana**, a la derecha de un comando o equipo vinculado a un elemento eliminado): la acción que utiliza el elemento eliminado (acción antes o después de la ejecución, acción sobre valor...) se quita, o el parámetro que solo lo contiene se vacía, y Jeedom guarda el elemento. La configuración anterior se anota en el log del plugin. Una referencia dentro de una fórmula no se toca: un clic en el comando abre su configuración avanzada y la ubicación indicada dice dónde corregirla;
 - **Comentar**, para guardar una nota sobre la comprobación.
 
-El plugin nunca elimina un escenario, un equipo o un comando que aún tiene un equipo: esas decisiones le corresponden.
+El plugin nunca elimina un escenario, ni un equipo cuyo plugin sigue instalado (aunque esté desactivado), ni un comando que aún tiene un equipo: esas decisiones le corresponden.
 
 ## Recuperar el nombre de un elemento eliminado
 
@@ -248,6 +250,9 @@ No. Solo los botones de corrección automática modifican la base, y siempre tra
 
 **¿Por qué un equipo que uso aparece como huérfano?**
 Está oculto, ninguno de sus comandos está historizado y el plugin no encuentra ninguna referencia a él (ver los límites más arriba). Ignore la comprobación o haga visible el equipo.
+
+**Se indica una referencia no encontrada en un escenario, pero no la veo en el editor**
+Cada línea indica dónde está la referencia: disparador, condición o acción de un bloque (SI, ENTONCES, SI NO...), y «en sus opciones» cuando no es el comando de la acción sino uno de sus campos (mensaje, título...). Los disparadores de un escenario en modo **Programado** no se comprueban: Jeedom los conserva en la base pero los oculta y no los usa.
 
 **Informar de un problema**
 Ponga el log del plugin en Debug, vuelva a ejecutar la auditoría, haga clic en **Diagnóstico** en la página del plugin y adjunte el archivo a su mensaje en el foro (las direcciones públicas, las cuentas y los correos electrónicos están ocultos).

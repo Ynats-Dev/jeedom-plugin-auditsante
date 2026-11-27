@@ -1,7 +1,7 @@
 {
 	"id": "auditsante",
 	"name": "Audit Santé",
-	"pluginVersion": "0.1.0",
+	"pluginVersion": "0.1.1",
 	"description": {
 		"fr_FR": "Audit de santé de votre installation Jeedom : scénarios et équipements orphelins, références vers des éléments supprimés, éléments oubliés, historique et logs encombrants.",
 		"en_US": "Health audit of your Jeedom installation: orphan scenarios and equipment, references to deleted items, forgotten items, bloated history and logs.",

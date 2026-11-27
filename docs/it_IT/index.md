@@ -42,7 +42,7 @@ Il rapporto mostra:
 
 ## Cosa controlla il plugin
 
-Il plugin legge una sola volta l'intera installazione (oggetti, dispositivi, comandi, scenari con tutti i loro blocchi, interazioni, viste, design, design 3D, riepiloghi, configurazione, utenti) e costruisce l'indice « chi usa cosa ». Riconosce i riferimenti `#1234#` (comando), `#eqLogic12#` (dispositivo), `#scenario5#` e `scenario_id` (scenario), oltre agli elementi posizionati nelle viste e nei design.
+Il plugin legge una sola volta l'intera installazione (oggetti, dispositivi, comandi, scenari con tutti i loro blocchi, interazioni, viste, design, design 3D, riepiloghi, configurazione, utenti) e costruisce l'indice « chi usa cosa ». Riconosce i riferimenti `#1234#` (comando), `#eqLogic12#` (dispositivo), `#scenario5#` e `scenario_id` (scenario), oltre agli elementi posizionati nelle viste e nei design. Un numero maggiore dell'ultimo identificativo assegnato da Jeedom non viene segnalato come non trovato: non ha mai designato un elemento (ID di conversazione Telegram, numero di telefono scritto tra cancelletti...).
 
 ### Riferimenti interrotti
 
@@ -72,7 +72,7 @@ Il plugin legge una sola volta l'intera installazione (oggetti, dispositivi, com
 
 | Controllo | Importanza | Cosa viene cercato | Correzione automatica |
 |---|---|---|---|
-| Dispositivi fantasma (plugin rimosso o disattivato) | Alta | Quando un plugin viene rimosso o disattivato, i suoi dispositivi restano nel database: non appaiono più da nessuna parte, ma gli scenari, le viste e i design che li usano non funzionano più. |  |
+| Dispositivi fantasma (plugin rimosso o disattivato) | Alta | Quando un plugin viene rimosso o disattivato, i suoi dispositivi restano nel database: non appaiono più da nessuna parte, ma gli scenari, le viste e i design che li usano non funzionano più. | Sì |
 | Dispositivi in timeout | Media | Questi dispositivi non hanno comunicato entro il ritardo di allarme configurato: batteria scarica, modulo fuori portata, apparecchio scollegato... |  |
 | Batterie scariche | Media | Il livello di batteria di questi dispositivi è sotto la soglia di allarme (Impostazioni > Sistema > Configurazione > Dispositivi, o soglia propria del dispositivo). |  |
 | Dispositivi muti | Bassa | Dispositivi attivi i cui comandi info non ricevono alcun valore da molto tempo, e senza ritardo di allarme (timeout) configurato: Jeedom quindi non li segnala mai. Spesso sono moduli morti o rimossi dalla casa. |  |
@@ -148,13 +148,15 @@ Un controllo **Niente da segnalare** ottiene tutti i suoi punti, un controllo **
 A seconda del controllo, il dettaglio propone:
 
 - un **link** su ogni elemento elencato (scenario, dispositivo, vista...), che apre la sua pagina in Jeedom;
-- un pulsante di **correzione automatica** (icona della bacchetta magica) solo per i casi senza rischi: eliminare ciò che nulla può più usare (comandi senza dispositivo, cronologia di comandi eliminati, log di scenari eliminati, attività e listener di un plugin rimosso, variabili di elementi eliminati). Una finestra spiega cosa verrà eliminato prima di qualsiasi azione. Faccia prima un backup;
+- un pulsante di **correzione automatica** (icona della bacchetta magica) solo per i casi senza rischi: eliminare ciò che nulla può più usare (comandi senza dispositivo, cronologia di comandi eliminati, log di scenari eliminati, attività e listener di un plugin rimosso, variabili di elementi eliminati, dispositivi di un plugin non più installato). Una finestra spiega cosa verrà eliminato prima di qualsiasi azione. Faccia prima un backup;
 - **Ricontrolla**, per rieseguire solo questo controllo dopo una correzione manuale;
 - **Ignora**, se la situazione è voluta (un dispositivo di riserva lasciato disattivato, uno scenario avviato dall'API...). Il controllo esce dal punteggio e resta visibile nel filtro **Ignorati**. Scelga una durata (7 giorni, 30 giorni, 3 mesi, 1 anno o senza limite): al termine, il controllo torna a contare e un messaggio di Jeedom la avvisa. Può annotare il motivo;
-- **Escludere un elemento** (icona occhio barrato a destra del suo nome, per le variabili inutilizzate), quando sai che è usato anche se l'audit non lo vede (variabile letta da un programma esterno, nome costruito in un modo che l'audit non riconosce). Il controllo viene subito rieseguito: l'elemento esce dall'elenco e dal conteggio e passa nell'elenco **Esclusi dall'audit**, da cui un clic lo reinserisce. A differenza di **Ignora**, il resto del controllo continua a contare nel punteggio;
+- **Escludere un elemento** (pulsante **Escludi** a destra del suo nome, per le variabili inutilizzate), quando sai che è usato anche se l'audit non lo vede (variabile letta da un programma esterno, nome costruito in un modo che l'audit non riconosce). Il controllo viene subito rieseguito: l'elemento esce dall'elenco e dal conteggio e passa nell'elenco **Esclusi dall'audit**, da cui un clic lo reinserisce. A differenza di **Ignora**, il resto del controllo continua a contare nel punteggio;
+- **Escludere uno scenario o un dispositivo** (pulsante a destra dell'elemento, per gli scenari che non possono mai avviarsi, che non si avviano più, che usano elementi disattivati o che sono attivati da un dispositivo disattivato, gli scenari disattivati dimenticati, i dispositivi disattivati, muti, orfani o in timeout, i plugin disattivati, gli oggetti vuoti e le viste e i design vuoti): la situazione è voluta (scenario avviato da un URL o dall'API, allarme intrusione che scatta solo in caso di furto, dispositivo che si disattiva e riattiva secondo certi eventi...). L'elemento resta nell'elenco **Esclusi dall'audit**, ma non conta più nel punteggio; se tutti gli elementi del controllo sono voluti, diventa verde. Il pulsante **Reintegra** annulla questa scelta;
+- **Rimuovere un riferimento non trovato** (pulsante rosso **Elimina il valore info orfano** o **Elimina il riferimento orfano**, a destra di un comando o dispositivo collegato a un elemento eliminato): l'azione che utilizza l'elemento eliminato (azione prima o dopo l'esecuzione, azione su valore...) viene rimossa, oppure il parametro che contiene solo lui viene svuotato, poi Jeedom salva l'elemento. La configurazione precedente viene annotata nel log del plugin. Un riferimento all'interno di una formula non viene toccato: un clic sul comando apre la sua configurazione avanzata e la posizione indicata dice dove correggerlo;
 - **Commenta**, per conservare una nota sul controllo.
 
-Il plugin non elimina mai uno scenario, un dispositivo o un comando che ha ancora un dispositivo: queste decisioni spettano a lei.
+Il plugin non elimina mai uno scenario, né un dispositivo il cui plugin è ancora installato (anche disattivato), né un comando che ha ancora un dispositivo: queste decisioni spettano a lei.
 
 ## Ritrovare il nome di un elemento eliminato
 
@@ -248,6 +250,9 @@ No. Solo i pulsanti di correzione automatica modificano il database, e sempre do
 
 **Perché un dispositivo che uso è segnalato come orfano?**
 È nascosto, nessuno dei suoi comandi è storicizzato e il plugin non trova alcun riferimento ad esso (vedi i limiti sopra). Ignori il controllo o renda visibile il dispositivo.
+
+**In uno scenario è segnalato un riferimento non trovato, ma non lo vedo nell'editor**
+Ogni riga indica dove si trova il riferimento: trigger, condizione o azione di un blocco (SE, ALLORA, ALTRIMENTI...), e «nelle sue opzioni» quando non è il comando dell'azione ma uno dei suoi campi (messaggio, titolo...). I trigger di uno scenario in modalità **Programmato** non sono controllati: Jeedom li conserva nel database ma li nasconde e non li usa.
 
 **Segnalare un problema**
 Imposti il log del plugin su Debug, riavvii l'audit, poi clicchi su **Diagnostica** nella pagina del plugin e alleghi il file al suo messaggio sul forum (indirizzi pubblici, account ed e-mail vi sono mascherati).

@@ -230,12 +230,14 @@ class auditsanteIndex {
         }
       }
       $elements = array();
-      foreach (self::query('SELECT id FROM scenarioElement') as $row) {
-        $elements[(int) $row['id']] = true;
+      foreach (self::query('SELECT id, type FROM scenarioElement') as $row) {
+        $elements[(int) $row['id']] = (string) $row['type'];
       }
       $subElements = array();
-      foreach (self::query('SELECT id, scenarioElement_id FROM scenarioSubElement') as $row) {
+      $subTypes = array();
+      foreach (self::query('SELECT id, scenarioElement_id, type FROM scenarioSubElement') as $row) {
         $subElements[(int) $row['id']] = (int) $row['scenarioElement_id'];
+        $subTypes[(int) $row['id']] = (string) $row['type'];
       }
       $expressions = self::query('SELECT id, scenarioSubElement_id, type, expression, options FROM scenarioExpression');
       // Blocs imbriqués : élément enfant => élément parent
@@ -257,6 +259,7 @@ class auditsanteIndex {
         }
       }
       $texts = array();
+      $places = array();
       $codes = '';
       $variableOptions = '';
       $orphanExpressions = 0;
@@ -272,6 +275,15 @@ class auditsanteIndex {
           $texts[$scenarioId] = '';
         }
         $texts[$scenarioId] .= ' ' . $row['expression'] . ' ' . $row['options'];
+        if (self::mayReference($row['expression'] . $row['options'])) {
+          $places[$scenarioId][] = array(
+            'block' => isset($elements[$element]) ? $elements[$element] : '',
+            'part' => $subTypes[$subElement],
+            'type' => (string) $row['type'],
+            'expression' => (string) $row['expression'],
+            'options' => (string) $row['options'],
+          );
+        }
         if ($row['type'] == 'code') {
           $codes .= "\n" . $row['expression'];
         } elseif (stripos((string) $row['expression'], 'variable') !== false) {
@@ -279,7 +291,7 @@ class auditsanteIndex {
         }
       }
       $orphanElements = 0;
-      foreach ($elements as $id => $true) {
+      foreach ($elements as $id => $type) {
         if (!isset($elementScenario[$id])) {
           $orphanElements++;
         }
@@ -292,6 +304,7 @@ class auditsanteIndex {
       }
       return array(
         'texts' => $texts,
+        'places' => $places,
         'codes' => $codes,
         'variableOptions' => $variableOptions,
         'elementCount' => $elementCount,
@@ -307,6 +320,149 @@ class auditsanteIndex {
       $triggers = ($triggers === '' || $triggers === null) ? array() : array($triggers);
     }
     return array_values(array_filter(array_map('trim', array_map('strval', $triggers)), 'strlen'));
+  }
+
+  /**
+   * Déclencheurs pris en compte par Jeedom : aucun si le scénario est en mode « programmé ». Dans ce mode,
+   * Jeedom garde les déclencheurs en base mais les masque dans l'interface et ne les utilise pas.
+   */
+  public static function activeTriggers($_scenario) {
+    return in_array($_scenario->getMode(), array('provoke', 'all')) ? self::scenarioTriggers($_scenario) : array();
+  }
+
+  /** Vrai si une valeur (texte ou tableau de configuration) contient la référence. */
+  public static function hasRef($_value, $_type, $_id) {
+    $text = is_array($_value) ? json_encode($_value) : (string) $_value;
+    $refs = self::extract($text);
+    return in_array((int) $_id, $refs[$_type]);
+  }
+
+  /** Nom lisible d'un paramètre de configuration d'une commande ou d'un équipement. */
+  public static function configKeyName($_key) {
+    $names = array(
+      'actionCheckCmd' => __('action sur valeur', __FILE__),
+      'jeedomPreExecCmd' => __('action avant exécution', __FILE__),
+      'jeedomPostExecCmd' => __('action après exécution', __FILE__),
+      'calcul' => __('calcul', __FILE__),
+      'calculValueOffset' => __('formule de calcul', __FILE__),
+      'returnStateValue' => __('valeur de retour d\'état', __FILE__),
+      'updateCmdId' => __('commande à mettre à jour', __FILE__),
+      'infoName' => __('commande information', __FILE__),
+      'infoId' => __('commande information', __FILE__),
+    );
+    return isset($names[$_key]) ? $names[$_key] : sprintf(__('paramètre « %s »', __FILE__), $_key);
+  }
+
+  /**
+   * Emplacement d'une référence dans la configuration d'une commande ou d'un équipement :
+   * « action après exécution ; valeur liée »... Chaîne vide si introuvable.
+   */
+  public static function configRefPlace($_kind, $_id, $_type, $_refId) {
+    if ($_kind == 'cmd') {
+      $cmds = self::cmds();
+      $row = isset($cmds[$_id]) ? $cmds[$_id] : null;
+    } else {
+      $eqLogics = self::eqLogics();
+      $row = isset($eqLogics[$_id]) ? $eqLogics[$_id] : null;
+    }
+    if ($row === null) {
+      return '';
+    }
+    $found = array();
+    $configuration = json_decode((string) $row['configuration'], true);
+    if (is_array($configuration)) {
+      foreach ($configuration as $key => $value) {
+        if (!self::hasRef($value, $_type, $_refId)) {
+          continue;
+        }
+        $label = self::configKeyName($key);
+        // Jeedom n'affiche les actions avant/après exécution que sur les commandes action : sur une commande info,
+        // elles restent en base sans apparaître, et une sauvegarde de la configuration avancée les efface.
+        if ($_kind == 'cmd' && $row['type'] == 'info' && in_array($key, array('jeedomPreExecCmd', 'jeedomPostExecCmd'))) {
+          $label .= ' (' . __('masquée par Jeedom sur une commande info : cliquez sur « Supprimer la valeur info orpheline », ou sauvegardez la commande sans rien modifier', __FILE__) . ')';
+        }
+        $found[$label] = true;
+      }
+    }
+    if ($_kind == 'cmd' && $_type == 'cmd' && trim((string) $row['value']) === (string) $_refId) {
+      $found[__('valeur liée', __FILE__)] = true;
+    } elseif ($_kind == 'cmd' && self::hasRef($row['value'], $_type, $_refId)) {
+      $found[__('valeur liée', __FILE__)] = true;
+    }
+    return implode(' ; ', array_keys($found));
+  }
+
+  /**
+   * Emplacement d'une référence dans un scénario, pour la retrouver dans l'éditeur :
+   * « déclencheur », « bloc SI (SINON), action [Salon][Lampe][On], dans ses options »... Chaîne vide si introuvable.
+   */
+  public static function scenarioRefPlace($_scenarioId, $_type, $_id) {
+    $scenarios = self::scenarios();
+    if (!isset($scenarios[$_scenarioId])) {
+      return '';
+    }
+    $has = function ($_text) use ($_type, $_id) {
+      $refs = self::extract($_text);
+      return in_array((int) $_id, $refs[$_type]);
+    };
+    if ($has(implode(' ', self::activeTriggers($scenarios[$_scenarioId])))) {
+      return __('déclencheur', __FILE__);
+    }
+    $content = self::scenarioContent();
+    $found = array();
+    foreach (isset($content['places'][$_scenarioId]) ? $content['places'][$_scenarioId] : array() as $place) {
+      $inExpression = $has($place['expression']);
+      if (!$inExpression && !$has($place['options'])) {
+        continue;
+      }
+      $label = self::blockName($place['block']);
+      $part = self::blockName($place['part']);
+      if ($part !== '' && $part !== $label) {
+        $label .= ' (' . $part . ')';
+      }
+      switch ($place['type']) {
+        case 'condition':
+          $label .= ', ' . __('condition', __FILE__);
+          break;
+        case 'action':
+          $label .= ', ' . __('action', __FILE__) . ' ' . self::actionName($place['expression']);
+          break;
+      }
+      if (!$inExpression) {
+        $label .= ', ' . __('dans ses options', __FILE__);
+      }
+      $found[$label] = true;
+    }
+    return implode(' ; ', array_keys($found));
+  }
+
+  /** Nom affiché d'un type de bloc ou de sous-bloc de scénario (SI, ALORS, SINON, BOUCLE...). */
+  private static function blockName($_type) {
+    $names = array(
+      'if' => __('SI', __FILE__),
+      'then' => __('ALORS', __FILE__),
+      'else' => __('SINON', __FILE__),
+      'action' => __('ACTION', __FILE__),
+      'for' => __('BOUCLE', __FILE__),
+      'do' => __('FAIRE', __FILE__),
+      'in' => __('DANS', __FILE__),
+      'at' => __('A', __FILE__),
+      'code' => __('CODE', __FILE__),
+      'comment' => __('COMMENTAIRE', __FILE__),
+    );
+    if ($_type === '') {
+      return '';
+    }
+    return isset($names[$_type]) ? $names[$_type] : strtoupper($_type);
+  }
+
+  /** Nom court d'une action de scénario : [Objet][Équipement][Commande], ou son mot-clé (variable, scenario, wait...). */
+  private static function actionName($_expression) {
+    $expression = trim($_expression);
+    if (preg_match('/^#(\d+)#$/', $expression, $match)) {
+      return self::cmdName((int) $match[1]);
+    }
+    return '« ' . (mb_strlen($expression) > 40 ? mb_substr($expression, 0, 40) . '...' : $expression) . ' »';
   }
 
   /** Programmations d'un scénario (liste de chaînes cron non vides). */
@@ -420,10 +576,10 @@ class auditsanteIndex {
         $consumers[$_consumer['kind'] . ':' . $_consumer['id']] = $_consumer;
       };
 
-      // Scénarios : déclencheurs + contenu des blocs
+      // Scénarios : déclencheurs (sauf ceux qu'ignore le mode « programmé ») + contenu des blocs
       $content = self::scenarioContent();
       foreach (self::scenarios() as $id => $scenario) {
-        $text = implode(' ', self::scenarioTriggers($scenario)) . ' ' . (isset($content['texts'][$id]) ? $content['texts'][$id] : '');
+        $text = implode(' ', self::activeTriggers($scenario)) . ' ' . (isset($content['texts'][$id]) ? $content['texts'][$id] : '');
         $add(self::consumer('scenario', $id, self::scenarioName($id), self::scenarioUrl($id), $scenario->getIsActive() == 1, $text));
       }
 
@@ -615,6 +771,44 @@ class auditsanteIndex {
     return isset($list[$_id]);
   }
 
+  /**
+   * Plus grand identifiant jamais attribué dans la table d'un type (cmd, eqLogic, scenario) : le compteur
+   * AUTO_INCREMENT moins un, ou le plus grand identifiant présent s'il est plus haut (statistiques en cache).
+   * null si la table ne peut pas être lue.
+   */
+  public static function maxEverId($_type) {
+    return self::memo('maxEverId::' . $_type, function () use ($_type) {
+      $tables = array('cmd' => 'cmd', 'eqLogic' => 'eqLogic', 'scenario' => 'scenario');
+      if (!isset($tables[$_type])) {
+        return null;
+      }
+      $max = null;
+      $rows = self::query('SELECT MAX(id) AS id FROM `' . $tables[$_type] . '`');
+      if (isset($rows[0]['id']) && is_numeric($rows[0]['id'])) {
+        $max = (int) $rows[0]['id'];
+      }
+      try {
+        $rows = self::query('SELECT AUTO_INCREMENT AS next FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :table',
+          array('table' => $tables[$_type]));
+        if (isset($rows[0]['next']) && is_numeric($rows[0]['next'])) {
+          $max = max((int) $max, (int) $rows[0]['next'] - 1);
+        }
+      } catch (Throwable $e) {
+        // Droits insuffisants sur information_schema : le plus grand identifiant présent suffit
+      }
+      return $max;
+    });
+  }
+
+  /**
+   * Vrai si un numéro n'a jamais pu désigner un élément de ce type : il dépasse le dernier identifiant attribué.
+   * C'est alors une autre donnée écrite entre dièses (identifiant de conversation Telegram, numéro de téléphone...).
+   */
+  public static function neverExisted($_type, $_id) {
+    $max = self::maxEverId($_type);
+    return $max !== null && $max > 0 && (int) $_id > $max;
+  }
+
   /** Références introuvables : liste de {consumer (clé), type, id}. */
   public static function deadRefs() {
     return self::memo('deadRefs', function () {
@@ -625,7 +819,7 @@ class auditsanteIndex {
         }
         foreach ($consumer['refs'] as $type => $ids) {
           foreach ($ids as $id) {
-            if (!self::exists($type, $id)) {
+            if (!self::exists($type, $id) && !self::neverExisted($type, $id)) {
               $return[] = array('consumer' => $key, 'type' => $type, 'id' => $id);
             }
           }

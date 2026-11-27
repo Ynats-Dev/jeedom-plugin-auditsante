@@ -349,6 +349,25 @@ class auditsante extends eqLogic {
     return array('message' => $message, 'report' => self::rerunCheck($_id));
   }
 
+  /**
+   * Retire une référence introuvable d'une commande ou d'un équipement (clé « kind:id|type|id » d'un élément du rapport),
+   * via l'API de Jeedom, puis revérifie le contrôle. Retourne {message, report}.
+   */
+  public static function repairRef($_id, $_key) {
+    self::assertCheck($_id);
+    if (!preg_match('/^(cmd|eqLogic):(\d+)\|(cmd|eqLogic|scenario)\|(\d+)$/', (string) $_key, $match)) {
+      throw new Exception(__('Élément invalide', __FILE__));
+    }
+    if (auditsanteIndex::exists($match[3], $match[4])) {
+      throw new Exception(__('Cet élément existe de nouveau : la référence n\'est plus cassée.', __FILE__));
+    }
+    $removed = auditsanteChecks::repairDeadRef($match[1], (int) $match[2], $match[3], (int) $match[4]);
+    $message = ($removed > 0)
+      ? sprintf(__('%d utilisation(s) retirée(s).', __FILE__), $removed)
+      : __('Rien à retirer automatiquement : corrigez cette référence à la main.', __FILE__);
+    return array('message' => $message, 'report' => self::rerunCheck($_id));
+  }
+
   /** Durées proposées pour ignorer un contrôle, en jours (0 = sans limite). */
   const IGNORE_DAYS = array(7, 30, 90, 365, 0);
 
@@ -559,6 +578,8 @@ class auditsante extends eqLogic {
         'detail' => ($result === null) ? '' : $result['detail'],
         'items' => ($result === null) ? array() : $result['items'],
         'excludable' => !empty($def['exclude']),
+        // « voluntary » : éléments marqués comme voulus (scénarios, équipements) ; « unused » : variables utilisées sans que l'audit le voie
+        'excludeMode' => empty($def['exclude']) ? '' : (($def['exclude'] === 'voluntary') ? 'voluntary' : 'unused'),
         'excluded' => ($result !== null && isset($result['excluded'])) ? $result['excluded'] : array(),
         'ignored' => $isIgnored,
         'ignoredSince' => $isIgnored ? $ignored[$id]['since'] : null,
