@@ -7,6 +7,7 @@ lang: de_DE
 
 # 26/11/2026 - 0.1.1
 
+- Nicht gefundene Verweise: Eine Zahl, die direkt an Text grenzt oder mit einer Null beginnt (Hardwarekennung wie `0B11002F#ID#03020#slider#00` in den Befehlen eines Dimmers), wird nicht mehr für einen gelöschten Befehl gehalten.
 - Schaltfläche „Ausschließen“ erweitert auf deaktivierte Plugins, stumme, verwaiste oder im Timeout befindliche Geräte, leere Objekte sowie leere Ansichten und Designs (selten wechselnder Sensor, saisonales Gerät, von der API gelesenes Gerät, im Voraus angelegter Raum...).
 - Absichtlich deaktivierte Szenarien und Geräte: Schaltfläche „Ausschließen“ bei sechs Prüfungen (Szenarien, die nie starten können, nicht mehr starten, deaktivierte Elemente verwenden, von einem deaktivierten Gerät ausgelöst werden, vergessene deaktivierte Szenarien, deaktivierte Geräte). Das Element bleibt separat aufgeführt, zählt nicht mehr in der Bewertung und lässt sich mit einem Klick wieder aufnehmen.
 - Geräte und Befehle, die mit gelöschten Elementen verknüpft sind: Stelle der Referenz (Aktion vor oder nach der Ausführung, Aktion bei Wert, verknüpfter Wert...), direktes Öffnen der erweiterten Befehlskonfiguration und eine Schaltfläche, die die verwaiste Aktion über Jeedom entfernt.

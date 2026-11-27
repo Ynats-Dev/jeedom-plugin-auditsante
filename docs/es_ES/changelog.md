@@ -7,6 +7,7 @@ lang: es_ES
 
 # 26/11/2026 - 0.1.1
 
+- Referencias no encontradas: un número pegado a texto o que empieza por cero (identificador de hardware como `0B11002F#ID#03020#slider#00` en los comandos de un regulador) ya no se toma por un comando eliminado.
 - Botón «Excluir» ampliado a los plugins desactivados, los equipos mudos, huérfanos o en timeout, los objetos vacíos y las vistas y diseños vacíos (sensor que cambia rara vez, aparato de temporada, equipo leído por la API, habitación preparada de antemano...).
 - Escenarios y equipos desactivados a propósito: botón «Excluir» en seis comprobaciones (escenarios que nunca pueden lanzarse, que ya no se lanzan, que utilizan elementos desactivados, disparados por un equipo desactivado, escenarios desactivados olvidados, equipos desactivados). El elemento sigue apareciendo aparte, ya no cuenta en la nota y se reintegra con un clic.
 - Equipos y comandos vinculados a elementos eliminados: ubicación de la referencia (acción antes o después de la ejecución, acción sobre valor, valor vinculado...), apertura directa de la configuración avanzada del comando y botón que quita la acción huérfana mediante Jeedom.

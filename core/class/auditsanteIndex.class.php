@@ -494,13 +494,13 @@ class auditsanteIndex {
       return $refs;
     }
     if (strpos($text, '#') !== false) {
-      if (preg_match_all('/#(\d+)#/', $text, $matches)) {
+      if (preg_match_all('/(?<![A-Za-z0-9_])#([1-9]\d*)#(?![A-Za-z0-9_])/', $text, $matches)) {
         $refs['cmd'] = $matches[1];
       }
-      if (preg_match_all('/#eqLogic(\d+)#/', $text, $matches)) {
+      if (preg_match_all('/(?<![A-Za-z0-9_])#eqLogic([1-9]\d*)#(?![A-Za-z0-9_])/', $text, $matches)) {
         $refs['eqLogic'] = $matches[1];
       }
-      if (preg_match_all('/#scenario(\d+)#/', $text, $matches)) {
+      if (preg_match_all('/(?<![A-Za-z0-9_])#scenario([1-9]\d*)#(?![A-Za-z0-9_])/', $text, $matches)) {
         $refs['scenario'] = $matches[1];
       }
     }

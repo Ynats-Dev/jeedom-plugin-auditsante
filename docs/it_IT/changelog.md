@@ -7,6 +7,7 @@ lang: it_IT
 
 # 26/11/2026 - 0.1.1
 
+- Riferimenti non trovati: un numero attaccato a del testo o che inizia con zero (identificativo hardware come `0B11002F#ID#03020#slider#00` nei comandi di un variatore) non viene più scambiato per un comando eliminato.
 - Pulsante «Escludi» esteso ai plugin disattivati, ai dispositivi muti, orfani o in timeout, agli oggetti vuoti e alle viste e ai design vuoti (sensore che cambia raramente, dispositivo stagionale, dispositivo letto dall'API, stanza preparata in anticipo...).
 - Scenari e dispositivi disattivati volutamente: pulsante «Escludi» su sei controlli (scenari che non possono mai avviarsi, che non si avviano più, che usano elementi disattivati, attivati da un dispositivo disattivato, scenari disattivati dimenticati, dispositivi disattivati). L'elemento resta elencato a parte, non conta più nel punteggio e si reintegra con un clic.
 - Dispositivi e comandi collegati a elementi eliminati: posizione del riferimento (azione prima o dopo l'esecuzione, azione su valore, valore collegato...), apertura diretta della configurazione avanzata del comando e pulsante che rimuove l'azione orfana tramite Jeedom.

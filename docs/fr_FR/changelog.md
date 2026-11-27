@@ -7,6 +7,7 @@ lang: fr_FR
 
 # 26/11/2026 - 0.1.1
 
+- Références introuvables : un numéro collé à du texte ou qui commence par zéro (identifiant matériel du type `0B11002F#ID#03020#slider#00` dans les commandes d'un variateur) n'est plus pris pour une commande supprimée.
 - Bouton « Exclure » étendu aux plugins désactivés, aux équipements muets, orphelins ou en timeout, aux objets vides et aux vues et designs vides (capteur qui change rarement, appareil saisonnier, équipement lu par l'API, pièce préparée à l'avance...).
 - Scénarios et équipements désactivés volontairement : bouton « Exclure » sur six contrôles (scénarios qui ne peuvent jamais se lancer, qui ne se lancent plus, qui utilisent des éléments désactivés, déclenchés par un équipement désactivé, scénarios désactivés oubliés, équipements désactivés). L'élément reste affiché à part, ne compte plus dans la note, et se réintègre d'un clic.
 - Équipements et commandes liés à des éléments supprimés : emplacement de la référence (action avant ou après exécution, action sur valeur, valeur liée...), ouverture directe de la configuration avancée de la commande, et bouton qui retire l'action orpheline via Jeedom.

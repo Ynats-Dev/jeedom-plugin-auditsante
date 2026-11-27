@@ -7,6 +7,7 @@ lang: en_US
 
 # 26/11/2026 - 0.1.1
 
+- Missing references: a number glued to text or starting with zero (hardware identifier such as `0B11002F#ID#03020#slider#00` in a dimmer's commands) is no longer mistaken for a deleted command.
 - “Exclude” button extended to disabled plugins, silent, orphan or timed-out devices, empty objects and empty views and designs (sensor that rarely changes, seasonal device, device read by the API, room prepared in advance...).
 - Scenarios and devices disabled on purpose: “Exclude” button on six checks (scenarios that can never run, that no longer run, that use disabled items, triggered by a disabled device, forgotten disabled scenarios, disabled devices). The item stays listed separately, no longer counts in the score, and can be restored in one click.
 - Devices and commands linked to deleted items: location of the reference (action before or after execution, action on value, linked value...), direct opening of the command's advanced configuration, and a button that removes the orphan action through Jeedom.
